@@ -309,6 +309,18 @@ class ExcavatorController:
         """停止大臂与铲斗的继电器动作"""
         return self._send_single_byte_action(self.ID_BOOM_BUCKET, self.BOOM_BUCKET_BITS["stop"])
 
+    def stop_bucket(self) -> bytes:
+        """仅停止铲斗的动作。"""
+        return self._send_single_byte_action(self.ID_BOOM_BUCKET, self.BOOM_BUCKET_BITS["stop"])
+
+    def stop_arm(self) -> bytes:
+        """仅停止小臂的动作。"""
+        return self._send_single_byte_action(self.ID_ARM_SWING, self.ARM_SWING_BITS["stop"])
+
+    def stop_boom(self) -> bytes:
+        """仅停止大臂的动作。"""
+        return self._send_single_byte_action(self.ID_BOOM_BUCKET, self.BOOM_BUCKET_BITS["stop"])
+
     def stop_arm_swing(self) -> bytes:
         """停止小臂与回转的继电器动作"""
         return self._send_single_byte_action(self.ID_ARM_SWING, self.ARM_SWING_BITS["stop"])

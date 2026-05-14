@@ -4,7 +4,7 @@ import sys
 import os
 import time
 
-# 引入之前的底层库
+# 引入底层库
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "v1")))
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "v3", "WitStandardModbus_WT901C485-main", "Python", "Python-SDK-WT901C485_new")))
 
@@ -20,9 +20,9 @@ class V4ClosedLoopGUI:
 
         # 1. 初始化物理控制器
         try:
-            self.base_controller = build_controller(port="COM5", baudrate=115200)
+            self.base_controller = build_controller(port="/dev/ttyUSB_Controller", baudrate=115200)
             if not self.base_controller.connect():
-                messagebox.showwarning("连接失败", "无法打开 CAN 串口(COM5)，当前处于离线模式。")
+                messagebox.showwarning("连接失败", "无法打开 CAN 串口(/dev/ttyUSB_Controller)，当前处于离线模式。")
         except Exception as e:
             messagebox.showerror("CAN 初始化失败", str(e))
             self.base_controller = None
@@ -54,27 +54,46 @@ class V4ClosedLoopGUI:
         self._update_loop()
 
     def _init_sensors(self):
-        addrLis = [0x50]
+        addrLis = [0x50, 0x51, 0x52, 0x53]
         baud = 230400
-        configs = [("大臂", "COM11"), ("小臂", "COM8"), ("铲斗", "COM7"), ("回转", "COM12")]
         
-        for name, port in configs:
+        # 使用 Ubuntu 下 udev 规则绑定的软链接名称
+        ports = [
+            "/dev/ttyUSB_Sensor1",
+            "/dev/ttyUSB_Sensor2",
+            "/dev/ttyUSB_Sensor3",
+            "/dev/ttyUSB_Sensor4",
+        ]
+        
+        for port in ports:
             try:
-                dev = device_model.DeviceModel(name, port, baud, addrLis, self._sensor_callback(name))
+                # 注意这里传入 port，因为我们要通过 id_to_name 在回调里判断具体是哪个传感器
+                dev = device_model.DeviceModel(port, port, baud, addrLis, self._sensor_callback(port))
                 dev.openDevice()
                 dev.startLoopRead()
                 self.devices.append(dev)
-                print(f"[{name}] {port} 传感器就绪")
+                print(f"[{port}] 传感器初始化成功")
             except Exception as e:
-                print(f"[{name}] {port} 初始化失败: {e}")
+                print(f"[{port}] 初始化失败: {e}")
 
-    def _sensor_callback(self, sensor_name):
+    def _sensor_callback(self, port_name):
+        id_to_name = {
+            0x50: "铲斗",
+            0x51: "小臂",
+            0x52: "大臂",
+            0x53: "回转"
+        }
+        
         def update(dm):
-            addr = dm.addrLis[0]
-            data = dm.deviceData.get(addr, {})
-            if data:
-                self.sensor_data[sensor_name]["pitch"] = data.get("AngY", 0.0)
-                self.sensor_data[sensor_name]["yaw"] = data.get("AngZ", 0.0)
+            for addr, name in id_to_name.items():
+                data = dm.deviceData.get(addr, {})
+                # 我们这里获取 AngX(Roll) 代替之前的 AngY，保持和 v3 ROS2 一致
+                if data and "AngX" in data:
+                    self.sensor_data[name]["pitch"] = data.get("AngX", 0.0)
+                    self.sensor_data[name]["yaw"] = data.get("AngZ", 0.0)
+                    
+                    # 取出数据后清除缓存
+                    dm.deviceData[addr].clear()
         return update
 
     def _build_ui(self):
@@ -107,16 +126,18 @@ class V4ClosedLoopGUI:
         ctrl_frame = ttk.LabelFrame(main_frame, text="闭环角度目标控制", padding=10)
         ctrl_frame.pack(fill=tk.BOTH, expand=True, pady=5)
 
-        self._create_ctrl_row(ctrl_frame, 0, "铲斗-小臂", "bucket_arm", self.target_bucket_arm)
-        self._create_ctrl_row(ctrl_frame, 1, "小臂-大臂", "arm_boom", self.target_arm_boom)
-        self._create_ctrl_row(ctrl_frame, 2, "大臂-回转", "boom_swing", self.target_boom_swing)
-        self._create_ctrl_row(ctrl_frame, 3, "回转偏航", "swing_yaw", self.target_swing_yaw)
+        self._create_ctrl_row(ctrl_frame, 0, "铲斗-小臂", "bucket_arm", self.target_bucket_arm, "目标角度(°):")
+        self._create_ctrl_row(ctrl_frame, 1, "小臂-大臂", "arm_boom", self.target_arm_boom, "目标角度(°):")
+        self._create_ctrl_row(ctrl_frame, 2, "大臂-回转", "boom_swing", self.target_boom_swing, "目标角度(°):")
+        
+        # 回转改为时间控制，提示词改变
+        self._create_ctrl_row(ctrl_frame, 3, "回转动作", "swing_yaw", self.target_swing_yaw, "目标时间(秒): (正右负左)")
 
         ttk.Button(main_frame, text="【急停所有闭环动作】", command=self.angle_ctrl.stop_all).pack(pady=20, ipadx=20, ipady=10)
 
-    def _create_ctrl_row(self, parent, row, label_text, joint_name, target_var):
-        ttk.Label(parent, text=f"{label_text} 目标角度(°):").grid(row=row, column=0, padx=10, pady=10, sticky="e")
-        ttk.Entry(parent, textvariable=target_var, width=10).grid(row=row, column=1, padx=5, pady=10)
+    def _create_ctrl_row(self, parent, row, label_text, joint_name, target_var, entry_label):
+        ttk.Label(parent, text=f"{label_text} {entry_label}").grid(row=row, column=0, padx=10, pady=10, sticky="e")
+        ttk.Entry(parent, textvariable=target_var, width=15).grid(row=row, column=1, padx=5, pady=10)
         ttk.Button(
             parent, text=f"开始移动 {label_text}", 
             command=lambda: self.angle_ctrl.move_joint_to_angle(
@@ -129,11 +150,11 @@ class V4ClosedLoopGUI:
         # 更新传感器数据给控制器
         self.angle_ctrl.update_sensor_data(self.sensor_data)
         
-        # 更新界面显示
+        # 更新界面显示 (计算真实相减的夹角，这与 v3 版本相符)
         d = self.sensor_data
-        diff_ba = abs(d['铲斗']['pitch'] - d['小臂']['pitch'])
-        diff_ab = abs(d['小臂']['pitch'] - d['大臂']['pitch'])
-        diff_bs = abs(d['大臂']['pitch'] - d['回转']['pitch'])
+        diff_ba = d['铲斗']['pitch'] - d['小臂']['pitch']
+        diff_ab = d['小臂']['pitch'] - d['大臂']['pitch']
+        diff_bs = d['大臂']['pitch'] - d['回转']['pitch']
         yaw_s = d['回转']['yaw']
 
         self.lbl_bucket_arm.config(text=f"铲斗-小臂 夹角: {diff_ba:6.1f}°")
