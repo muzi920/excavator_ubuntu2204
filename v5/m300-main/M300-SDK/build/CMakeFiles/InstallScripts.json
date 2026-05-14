@@ -1,0 +1,7 @@
+{
+	"InstallScripts" : 
+	[
+		"/media/libo/libo_sn7100/ubuntu2204/shandong_ws/src/shandong/v5/m300-main/M300-SDK/build/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

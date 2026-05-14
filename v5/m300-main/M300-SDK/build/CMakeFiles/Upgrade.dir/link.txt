@@ -1,0 +1,1 @@
+/usr/bin/c++  -O0 -Wall -g2 -ggdb CMakeFiles/Upgrade.dir/sdk/global.cpp.o CMakeFiles/Upgrade.dir/sdk/pacecatlidarsdk.cpp.o CMakeFiles/Upgrade.dir/sdk/playback.cpp.o CMakeFiles/Upgrade.dir/sdk/upgrade.cpp.o CMakeFiles/Upgrade.dir/samples/Upgrade.cpp.o -o Upgrade  -lm -lpthread

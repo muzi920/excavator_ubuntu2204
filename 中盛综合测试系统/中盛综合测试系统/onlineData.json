@@ -1,0 +1,38 @@
+[
+  {
+    "Name": "MQTT参数",
+    "Memo": "测试使用",
+    "Type": "mqtt",
+    "Ip": "192.168.1.1",
+    "Gateway": "192.161.1.1",
+    "Port": 0,
+    "Subnets": null,
+    "Dns": null,
+    "Count": 50,
+    "ServerIp": "192.168.1.2",
+    "ServerPort": 555,
+    "ClientId": "ZSKJ",
+    "UserName": "ppp",
+    "Password": "llll",
+    "Subscribe": "/sss",
+    "Publish": "/ppp"
+  },
+  {
+    "Name": "TCP-Server参数",
+    "Memo": null,
+    "Type": "tcps",
+    "Ip": "192.168.1.65",
+    "Gateway": "192.161.1.1",
+    "Port": 8238,
+    "Subnets": "255.0.0.0",
+    "Dns": "1.1.1.1",
+    "Count": 45,
+    "ServerIp": null,
+    "ServerPort": 0,
+    "ClientId": null,
+    "UserName": null,
+    "Password": null,
+    "Subscribe": null,
+    "Publish": null
+  }
+]
