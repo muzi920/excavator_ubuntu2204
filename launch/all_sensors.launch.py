@@ -31,13 +31,19 @@ def generate_launch_description():
         output='screen'
     )
 
-    # 4. 启动 WIT 倾角传感器节点 (大臂、小臂、铲斗相对角度)
+    # 4. 启动点云坐标系转换节点 (将 /pointcloud 从 map 转换到 base_link)
+    pointcloud_transformer_node = ExecuteProcess(
+        cmd=['python3', os.path.join(pkg_path, 'v5_sensor_read_lidar', 'pointcloud_transformer.py')],
+        output='screen'
+    )
+
+    # 5. 启动 WIT 倾角传感器节点 (大臂、小臂、铲斗相对角度)
     imu_node = ExecuteProcess(
         cmd=['python3', os.path.join(pkg_path, 'v3_sensor_read_wit', 'ros2_readRad_pub.py')],
         output='screen'
     )
 
-    # 5. 启动所有摄像头合并节点 (海康主视角 + 两个网络摄像头覆盖视角)
+    # 6. 启动所有摄像头合并节点 (海康主视角 + 两个网络摄像头覆盖视角)
     cams_node = ExecuteProcess(
         cmd=['python3', os.path.join(pkg_path, 'v6_sensor_read_camera', 'ros2_net_cams_pub.py')],
         output='screen'
@@ -50,6 +56,7 @@ def generate_launch_description():
         
         # 2. 角度解算与传感器采集
         swing_estimator_node,
+        pointcloud_transformer_node,
         imu_node,
         
         # 3. 视觉采集
