@@ -25,6 +25,7 @@ class LidarDirectReader:
             "acc": [0.0, 0.0, 0.0],
             "timestamp": 0
         }
+        self.imu_update_count = 0
         
         # 点云数据缓存 (这里仅缓存最新的一帧数据，或者按需扩展)
         # 为避免内存爆炸，我们限制缓存大小
@@ -94,6 +95,7 @@ class LidarDirectReader:
                         acc_z_raw * acc_scale
                     ]
                     self.latest_imu["timestamp"] = timestamp
+                    self.imu_update_count += 1
                     
             # 判断是否为点云包 (1316 字节, 头标志版本为 0 或 1)
             elif data_len == 1316 and (data[0] == 0x00 or data[0] == 0x01):
@@ -162,6 +164,7 @@ if __name__ == "__main__":
             time.sleep(1.0)
             imu = reader.get_latest_imu()
             pc = reader.get_latest_pointcloud(clear=True)
-            print(f"IMU: GyroZ={imu['gyro'][2]:.4f} rad/s, AccZ={imu['acc'][2]:.4f} g | PointCloud size: {len(pc)}")
+            print(f"IMU: GyroZ={imu['gyro'][2]:.4f} rad/s, AccZ={imu['acc'][2]:.4f} g | IMU Hz: {reader.imu_update_count} | PointCloud size: {len(pc)}")
+            reader.imu_update_count = 0
     except KeyboardInterrupt:
         reader.stop()
