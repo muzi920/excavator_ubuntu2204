@@ -139,7 +139,7 @@ class ImuPublisherNode(Node):
                             
                         # 避免时间错误/粘连数据：限制最高发布频率
                         interval = current_time - last_published_time[addr]
-                        if interval > 0.01:
+                        if interval > 0.002: # 频率上限放宽到 500Hz，充分释放传感器潜能
                             # 1. 保持之前的四类数据发布不变（发布原始的绝对角度和加速度）
                             msg_ang_x = Float32MultiArray()
                             msg_ang_x.data = [float(ang_x)]
@@ -159,13 +159,12 @@ class ImuPublisherNode(Node):
                             self.pubs[name]["acc_y"].publish(msg_acc_y)
                             
                             # 2. 新增发布综合相对角度数据
-                            # 为了避免4个传感器回调各发一次导致数据冗余，我们可以选择只在其中一个传感器（比如铲斗 0x50）的回调中触发这综合数据的发布
-                            # 因为 latest_abs_ang_x 保存了所有的最新状态
-                            if addr == 0x50:
-                                msg_rel_ang = Float32MultiArray()
-                                # 约定数据格式为 [大臂相对角, 小臂相对角, 铲斗相对角]
-                                msg_rel_ang.data = [float(rel_boom_x), float(rel_arm_x), float(rel_bucket_x)]
-                                self.pub_rel_ang_x.publish(msg_rel_ang)
+                            # [高频优化]: 移除 addr == 0x50 的限制，只要任何一个部位的传感器有了新数据，
+                            # 立刻发布当前最新的全局相对姿态！这样能保证下游控制节点以绝对最低延迟拿到数据。
+                            msg_rel_ang = Float32MultiArray()
+                            # 约定数据格式为 [大臂相对角, 小臂相对角, 铲斗相对角]
+                            msg_rel_ang.data = [float(rel_boom_x), float(rel_arm_x), float(rel_bucket_x)]
+                            self.pub_rel_ang_x.publish(msg_rel_ang)
                             
                             # 更新状态
                             last_published_time[addr] = current_time

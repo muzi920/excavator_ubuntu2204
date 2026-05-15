@@ -16,8 +16,8 @@ class NetCamsPublisher(Node):
         self.declare_parameter('net_rtsp_url', 'rtsp://admin:GWWzPzb2Tci@192.168.158.102:554/stream')
         self.declare_parameter('net2_rtsp_url', 'rtsp://admin:@192.168.158.103:554/stream')
         self.declare_parameter('hik_rtsp_url', 'rtsp://admin:GWWzPzb2Tci@192.168.158.101:554/Streaming/Channels/101')
-        self.declare_parameter('width', 640)
-        self.declare_parameter('height', 480)
+        self.declare_parameter('width', 1280)
+        self.declare_parameter('height', 720)
         self.declare_parameter('fps', 30.0)
         
         net_url = self.get_parameter('net_rtsp_url').value

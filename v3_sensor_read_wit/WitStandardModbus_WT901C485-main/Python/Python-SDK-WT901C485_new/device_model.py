@@ -358,9 +358,12 @@ class DeviceModel:
         print("循环读取开始")
         while self.loop:
             for addr in self.addrLis:
+                # 为了加速轮询，缩短每次等待的时间
+                # 这是向传感器发送读取指令后的缓冲时间，原厂通常设置在 0.05-0.1s
+                # 我们可以将其降低到 0.005，因为 230400 波特率传输只需不到 1 毫秒
                 self.readReg(addr, 0x34, 12)
                 # 波特率较高时可以缩短延时，加快读取频率
-                time.sleep(0.02)
+                time.sleep(0.005) # 【修改】将时间从原来的等待时长降低到 5ms
         print("循环读取结束")
 
     # 关闭循环读取 Close loop reading

@@ -1,0 +1,114 @@
+{
+    "codebase_version": "v3.0",
+    "robot_type": null,
+    "total_episodes": 0,
+    "total_frames": 0,
+    "total_tasks": 0,
+    "chunks_size": 1000,
+    "data_files_size_in_mb": 100,
+    "video_files_size_in_mb": 200,
+    "fps": 10,
+    "splits": {},
+    "data_path": "data/chunk-{chunk_index:03d}/file-{file_index:03d}.parquet",
+    "video_path": "videos/{video_key}/chunk-{chunk_index:03d}/file-{file_index:03d}.mp4",
+    "features": {
+        "observation.state": {
+            "dtype": "float32",
+            "shape": [
+                4
+            ],
+            "names": [
+                "swing_yaw",
+                "boom_pitch",
+                "arm_pitch",
+                "bucket_pitch"
+            ]
+        },
+        "observation.images.hikvision_cam": {
+            "dtype": "video",
+            "shape": [
+                3,
+                1080,
+                1920
+            ],
+            "names": [
+                "channels",
+                "height",
+                "width"
+            ]
+        },
+        "observation.images.network_cam_102": {
+            "dtype": "video",
+            "shape": [
+                3,
+                1080,
+                1920
+            ],
+            "names": [
+                "channels",
+                "height",
+                "width"
+            ]
+        },
+        "observation.images.bucket_cam_103": {
+            "dtype": "video",
+            "shape": [
+                3,
+                1080,
+                1920
+            ],
+            "names": [
+                "channels",
+                "height",
+                "width"
+            ]
+        },
+        "action": {
+            "dtype": "float32",
+            "shape": [
+                4
+            ],
+            "names": [
+                "target_swing",
+                "target_boom",
+                "target_arm",
+                "target_bucket"
+            ]
+        },
+        "timestamp": {
+            "dtype": "float32",
+            "shape": [
+                1
+            ],
+            "names": null
+        },
+        "frame_index": {
+            "dtype": "int64",
+            "shape": [
+                1
+            ],
+            "names": null
+        },
+        "episode_index": {
+            "dtype": "int64",
+            "shape": [
+                1
+            ],
+            "names": null
+        },
+        "index": {
+            "dtype": "int64",
+            "shape": [
+                1
+            ],
+            "names": null
+        },
+        "task_index": {
+            "dtype": "int64",
+            "shape": [
+                1
+            ],
+            "names": null
+        }
+    }
+}
