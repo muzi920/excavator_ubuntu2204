@@ -9,8 +9,10 @@
 - `v2_control_time_track`：基于时间的动作调度与剧本控制
 - `v3_sensor_read_wit`：WIT 倾角传感器读取、串口识别与 ROS 2 发布
 - `v4_control_closed`：基于倾角反馈的闭环角度控制
-- `v5_sensor_read_lidar`：M300 雷达读取、可视化与 TF 标定
+- `v5_sensor_read_lidar`：M300 雷达读取、点云与 IMU 处理、TF 标定
 - `v6_sensor_read_camera`：USB/RTSP 摄像头读取与 ROS 2 图像发布
+- `v7_lerobot_dataset`：基于 ROS 2 的 LeRobot 数据集采集测试
+- `v8_direct_data_collection`：纯 Python 底层无延迟直连 LeRobot 采集架构
 - `launch`：多传感器启动脚本与静态 TF 统一管理
 
 ## 推荐调试流程
@@ -122,7 +124,8 @@ python3 v4_control_closed/closed_loop_gui.py
   - 雷达与多传感器坐标系整理说明。
 
 这里有两个重要约定：
-- 雷达点云的 `frame_id` 保持为 `map`，不直接改驱动内部输出。
+- 雷达点云的 `frame_id` 保持为 `map`，不直接改驱动内部输出。如果需要在 `base_link` 坐标系下使用，请使用 `pointcloud_transformer.py` 进行动态转换。
+- 回转角度的获取：由于雷达未发布直接四元数，当前通过订阅雷达的 `/imu` 角速度并在 Python 节点中进行**动态零偏校准**与**梯形积分**获取。
 - 为避免 Rviz2 中出现 `timestamp earlier than all the data in the transform cache`，标定和最终使用阶段以静态 TF 为主。
 
 ### `v6_sensor_read_camera`：多摄像头读取与图像发布
@@ -147,6 +150,34 @@ python3 v4_control_closed/closed_loop_gui.py
 
 注意：
 - 如果希望在 Rviz2 中把图像按相机视角投影到 3D 场景，而不是只看 2D 图像窗口，除了发布 `Image` 之外，还需要同步发布 `CameraInfo`。
+
+### `v7_lerobot_dataset`：基于 ROS 2 的 LeRobot 数据集采集测试
+该目录是构建模仿学习（Imitation Learning）数据集的早期版本，主要基于 ROS 2 话题进行订阅和同步。
+- `lerobot_data_collector.py`
+  - 使用 HuggingFace `LeRobotDataset` API 创建本地数据集。
+  - 通过 ROS 2 订阅图像、角度等话题。
+  - 已废弃：因发现 ROS 2 消息排队带来的通信延迟过高，无法满足精确控制对齐要求。
+
+### `v8_direct_data_collection`：纯 Python 底层直连采集架构 (推荐)
+该目录彻底抛弃 ROS 2 消息传递机制，直接通过 Python 底层协议读取硬件，实现**零延迟多模态数据采集**，完美对齐 `LeRobot`。
+
+- `inclinometer_reader.py`
+  - 使用独立线程和 Modbus RTU 协议直接轮询 WIT 倾角传感器，解析原始串口十六进制数据，实时计算各关节相对角。
+- `camera_reader.py`
+  - 使用独立守护线程和 `cv2.VideoCapture.grab()` 机制强制清空 FFmpeg RTSP 流缓冲，确保主线程每次拉取都是最新的一帧画面，消灭拉流延迟。
+- `lidar_reader.py`
+  - 纯 Python 编写的雷达 UDP 协议（端口 6668）解包工具。
+  - **IMU 处理**：解析 `0xFA 0x88` 包头，在后台 200Hz 高频实现去死区、零偏校准和回转梯形积分。
+  - **点云处理**：解析位域数据并使用 `numpy` 矩阵运算，实现 `map -> base_link` 齐次矩阵逆变换，并滤除超出 `(-5m, 5m)` 范围的无效点云。
+- `lerobot_direct_collector.py`
+  - 采集入口。主循环严格卡死在 10Hz，每隔 100ms 通过线程锁 `lock` 瞬间抓取所有硬件模块的**最新鲜数据**。
+  - 将图像、点云 (padding 至 15000)、角度状态压入 LeRobot 数据集，并通过终端命令支持 `start/stop` 分段录制。
+
+启动方式：
+
+```bash
+python3 v8_direct_data_collection/lerobot_direct_collector.py
+```
 
 ### `launch`：统一启动与坐标系管理
 该目录是 ROS 2 启动入口，负责把雷达、相机、IMU/倾角传感器与静态 TF 整理到统一坐标树中。
