@@ -21,9 +21,9 @@ def generate_launch_description():
         output='screen'
     )
 
-    # 3. 启动三个摄像头的合并节点 (同上，直接执行 Python 脚本)
+    # 3. 启动两个网络摄像头的合并节点 (同上，直接执行 Python 脚本)
     cams_node = ExecuteProcess(
-        cmd=['python3', '/media/libo/libo_sn7100/ubuntu2204/shandong_ws/src/shandong/v6/ros2_all_cams_pub.py'],
+        cmd=['python3', '/media/libo/libo_sn7100/ubuntu2204/shandong_ws/src/shandong/v6/ros2_net_cams_pub.py'],
         output='screen'
     )
 

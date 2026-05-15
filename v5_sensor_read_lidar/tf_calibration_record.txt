@@ -1,0 +1,22 @@
+
+# 记录时间: 2026-05-15 11:00:23
+# 请将以下代码复制并替换 sensors_tf.launch.py 中的雷达 Node 节点:
+
+    lidar_tf = Node(
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        name='lidar_static_tf',
+        arguments=['0.0000', '0.0000', '0.0000', '0.0000', '0.0000', '3.1416', 'map', 'base_link']
+    )
+--------------------------------------------------
+
+# 记录时间: 2026-05-15 11:18:31
+# 请将以下代码复制并替换 sensors_tf.launch.py 中的雷达 Node 节点:
+
+    lidar_tf = Node(
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        name='lidar_static_tf',
+        arguments=['-0.5500', '-0.2000', '1.2712', '0.0532', '0.0349', '3.0316', 'map', 'base_link']
+    )
+--------------------------------------------------
