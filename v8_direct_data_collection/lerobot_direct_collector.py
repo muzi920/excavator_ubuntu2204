@@ -8,6 +8,7 @@ from lerobot.datasets.lerobot_dataset import LeRobotDataset
 # 引入我们刚才封装好的模块
 from inclinometer_reader import InclinometerReader
 from camera_reader import MultiCameraReader
+from lidar_reader import LidarDirectReader
 
 def setup_dataset(repo_id: str, local_dir: str):
     features = {
@@ -15,6 +16,11 @@ def setup_dataset(repo_id: str, local_dir: str):
             "dtype": "float32",
             "shape": (4,), 
             "names": ["swing_yaw", "boom_pitch", "arm_pitch", "bucket_pitch"]
+        },
+        "observation.pointcloud": {
+            "dtype": "float32",
+            "shape": (15000, 4), 
+            "names": ["point_index", "features"]
         },
         "observation.images.hikvision_cam": {
             "dtype": "video",
@@ -56,13 +62,11 @@ class DirectCollector:
         # 初始化传感器读取模块
         self.inclinometer = InclinometerReader()
         self.cameras = MultiCameraReader(target_width=1280, target_height=720)
+        self.lidar = LidarDirectReader(ip="0.0.0.0", port=6668)
         
         self.is_recording = False
         self.episode_idx = 0
         self.step_count = 0
-        
-        # 回转角度暂无直接底层读取接口，预留 0.0
-        self.current_swing = 0.0 
         
         self.running = False
 
@@ -70,14 +74,16 @@ class DirectCollector:
         print(">>> 正在启动硬件读取模块...")
         self.inclinometer.start()
         self.cameras.start()
+        self.lidar.start()
         
         # 等待传感器和相机初始化 (获取第一帧)
-        print(">>> 等待传感器和相机缓冲初始化 (3秒)...")
+        print(">>> 等待传感器和相机缓冲初始化 (3秒)，同时进行 IMU 零偏校准...")
         time.sleep(3.0)
 
     def stop_hardware(self):
         self.inclinometer.stop()
         self.cameras.stop()
+        self.lidar.stop()
 
     def start_recording(self):
         if not self.is_recording:
@@ -115,14 +121,23 @@ class DirectCollector:
                 if boom_rel is None:
                     boom_rel, arm_rel, bucket_rel = 0.0, 0.0, 0.0
                     
+                current_swing = self.lidar.get_swing_angle()
+                    
                 current_state = np.array([
-                    self.current_swing,
+                    current_swing,
                     boom_rel,
                     arm_rel,
                     bucket_rel
                 ], dtype=np.float32)
                 
-                # 2. 获取最新画面
+                # 2. 获取点云并 padding 到固定形状 (15000, 4)
+                pc = self.lidar.get_latest_pointcloud(clear=True, transform_and_filter=True)
+                pc_padded = np.zeros((15000, 4), dtype=np.float32)
+                if pc is not None and len(pc) > 0:
+                    n_points = min(len(pc), 15000)
+                    pc_padded[:n_points, :] = pc[:n_points, :]
+                
+                # 3. 获取最新画面
                 frames = self.cameras.get_frames()
                 
                 def process_frame(frame):
@@ -135,13 +150,14 @@ class DirectCollector:
                 img_102 = process_frame(frames["net_102"])
                 img_103 = process_frame(frames["net_103"])
                 
-                # 3. 动作暂位
+                # 4. 动作暂位
                 current_action = np.array([0.0, 0.0, 0.0, 0.0], dtype=np.float32)
                 
-                # 4. 压入数据集
+                # 5. 压入数据集
                 try:
                     self.dataset.add_frame({
                         "observation.state": current_state,
+                        "observation.pointcloud": pc_padded,
                         "observation.images.hikvision_cam": img_hik,
                         "observation.images.network_cam_102": img_102,
                         "observation.images.bucket_cam_103": img_103,
