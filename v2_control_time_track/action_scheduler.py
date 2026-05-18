@@ -3,17 +3,17 @@ import sys
 import os
 from typing import Callable, Optional
 
-# 为了能引用到 v1 下的控制器，我们把上一级目录加到 sys.path
+# 为了能引用到上层目录中的 v1_control_gui，我们把上两级目录加到 sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from v1.zs_excavator_controller import build_controller, ExcavatorController
+from v1_control_base.zs_excavator_controller import build_controller, ExcavatorController
 
 class ActionScheduler:
     """
     挖掘机动作调度器 (v2)。
     允许你像写剧本一样，编排一系列带时间参数的动作。
     """
-    def __init__(self, port: str = "COM5", baudrate: int = 115200):
+    def __init__(self, port: str = "/dev/ttyUSB_Controller", baudrate: int = 115200):
         self.controller = build_controller(port, baudrate)
         
     def connect(self) -> bool:
@@ -23,28 +23,71 @@ class ActionScheduler:
         self.controller.close()
 
     def run_action(self, action_name: str, action_func: Callable, duration_s: float, 
-                   ch1_mv: int = 2000, ch2_mv: int = 2000, ch3_mv: int = 2000):
+                   ch1_mv: int = 2000, ch2_mv: int = 2000, ch3_mv: int = 2000,
+                   ramp_up_s: float = 0.0, ramp_down_s: float = 0.0):
         """
-        执行单个指定时间的动作。
+        执行单个指定时间的动作，支持柔性控制（三次样条插值的加速与减速）。
         
         参数:
         - action_name: 动作名称，仅用于打印日志
         - action_func: 要执行的 controller 的方法引用 (如 controller.boom_up)
-        - duration_s: 动作持续时间 (秒)
-        - ch1_mv, ch2_mv, ch3_mv: 动作期间给予的模拟量推力 (默认 2000mV)
+        - duration_s: 动作持续总时间 (秒)
+        - ch1_mv, ch2_mv, ch3_mv: 动作期间给予的目标最大模拟量推力
+        - ramp_up_s: 柔性启动（加速）时间 (秒)
+        - ramp_down_s: 柔性停止（减速）时间 (秒)
         """
-        print(f"\n[Scheduler] 开始执行 -> {action_name} | 持续: {duration_s}s | 模拟量: [{ch1_mv}, {ch2_mv}, {ch3_mv}]")
-        
-        # 1. 设置驱动推力 (模拟量)
-        self.controller.set_analog(ch1_mv, ch2_mv, ch3_mv)
-        
-        # 2. 触发继电器动作
+        print(f"\n[Scheduler] 开始执行 -> {action_name} | 总时长: {duration_s}s | 目标模拟量: [{ch1_mv}, {ch2_mv}, {ch3_mv}]")
+        if ramp_up_s > 0 or ramp_down_s > 0:
+            print(f"            启用柔性控制 -> 加速: {ramp_up_s}s, 减速: {ramp_down_s}s")
+            
+        # 容错处理：如果加减速时间加起来超过了总时间，按比例缩放
+        if ramp_up_s + ramp_down_s > duration_s:
+            scale = duration_s / (ramp_up_s + ramp_down_s)
+            ramp_up_s *= scale
+            ramp_down_s *= scale
+
+        # 1. 触发继电器动作 (此时模拟量可能为 0，防止瞬间冲击)
         action_func()
         
-        # 3. 阻塞等待动作完成
-        time.sleep(duration_s)
+        # 2. 柔性启动 (Ramp up) - 使用三次样条插值 (Cubic Spline) 减少加速度突变 (Jerk)
+        if ramp_up_s > 0:
+            steps = max(1, int(ramp_up_s / 0.05)) # 50ms 一步
+            dt = ramp_up_s / steps
+            for i in range(1, steps + 1):
+                tau = i / steps
+                # 三次多项式 s = 3*tau^2 - 2*tau^3 (使得起始和结束的加速度均为0)
+                s = 3 * (tau ** 2) - 2 * (tau ** 3)
+                
+                cur_ch1 = int(s * ch1_mv)
+                cur_ch2 = int(s * ch2_mv)
+                cur_ch3 = int(s * ch3_mv)
+                self.controller.set_analog(cur_ch1, cur_ch2, cur_ch3)
+                time.sleep(dt)
+        else:
+            # 没有柔性启动，直接给满目标模拟量
+            self.controller.set_analog(ch1_mv, ch2_mv, ch3_mv)
+            
+        # 3. 匀速保持时间
+        hold_time = duration_s - ramp_up_s - ramp_down_s
+        if hold_time > 0:
+            time.sleep(hold_time)
+            
+        # 4. 柔性停止 (Ramp down)
+        if ramp_down_s > 0:
+            steps = max(1, int(ramp_down_s / 0.05))
+            dt = ramp_down_s / steps
+            for i in range(1, steps + 1):
+                tau = i / steps
+                # 从 1 平滑下降到 0
+                s = 1.0 - (3 * (tau ** 2) - 2 * (tau ** 3))
+                
+                cur_ch1 = int(s * ch1_mv)
+                cur_ch2 = int(s * ch2_mv)
+                cur_ch3 = int(s * ch3_mv)
+                self.controller.set_analog(cur_ch1, cur_ch2, cur_ch3)
+                time.sleep(dt)
         
-        # 4. 安全保护，停止所有动作（模拟量不会清零，仅停止继电器）
+        # 5. 安全保护，停止所有动作
         self.controller.stop_all()
         print(f"[Scheduler] 停止执行 -> {action_name}")
         
@@ -122,8 +165,8 @@ class ActionScheduler:
 
 
 def main():
-    # 请确认 COM 端口是否正确
-    scheduler = ActionScheduler(port="COM3")
+    # 请确认 Ubuntu 下设备挂载点是否正确
+    scheduler = ActionScheduler(port="/dev/ttyUSB_Controller")
     
     if not scheduler.connect():
         print("串口连接失败，进入离线测试模式 (指令仅打印不会生效)")

@@ -1,0 +1,92 @@
+[
+  {
+    "step": 1,
+    "action": "boom_down",
+    "description": "大臂落下 (注意：此处的下落时间需要根据实际情况进行修改调整)",
+    "duration_s": 1,
+    "ch1_mv": 2000,
+    "ch2_mv": 2000,
+    "ch3_mv": 2000
+  },
+  {
+    "step": 2,
+    "action": "bucket_in",
+    "description": "铲斗回拉",
+    "duration_s": 1.8,
+    "ch1_mv": 2000,
+    "ch2_mv": 2000,
+    "ch3_mv": 2000
+  },
+  {
+    "step": 3,
+    "action": "arm_pull",
+    "description": "小臂回拉",
+    "duration_s": 0.7,
+    "ch1_mv": 2000,
+    "ch2_mv": 2000,
+    "ch3_mv": 2000
+  },
+  {
+    "step": 4,
+    "action": "bucket_in",
+    "description": "铲斗回拉",
+    "duration_s": 0.7,
+    "ch1_mv": 2000,
+    "ch2_mv": 2000,
+    "ch3_mv": 2000
+  },
+  {
+    "step": 5,
+    "action": "boom_up",
+    "description": "大臂抬起",
+    "duration_s": 2,
+    "ch1_mv": 2000,
+    "ch2_mv": 2000,
+    "ch3_mv": 2000
+  },
+  {
+    "step": 6,
+    "action": "swing_left",
+    "description": "回转左转",
+    "duration_s": 3.5,
+    "ch1_mv": 2000,
+    "ch2_mv": 2000,
+    "ch3_mv": 2000
+  },
+  {
+    "step": 7,
+    "action": "bucket_out",
+    "description": "铲斗外推",
+    "duration_s": 1.0,
+    "ch1_mv": 2000,
+    "ch2_mv": 2000,
+    "ch3_mv": 2000
+  },
+  {
+    "step": 8,
+    "action": "arm_push",
+    "description": "小臂前推",
+    "duration_s": 1.0,
+    "ch1_mv": 2000,
+    "ch2_mv": 2000,
+    "ch3_mv": 2000
+  },
+  {
+    "step": 9,
+    "action": "bucket_out",
+    "description": "铲斗外推",
+    "duration_s": 1.5,
+    "ch1_mv": 2000,
+    "ch2_mv": 2000,
+    "ch3_mv": 2000
+  },
+  {
+    "step": 10,
+    "action": "swing_right",
+    "description": "回转右转",
+    "duration_s": 3.5,
+    "ch1_mv": 2000,
+    "ch2_mv": 2000,
+    "ch3_mv": 2000
+  }
+]

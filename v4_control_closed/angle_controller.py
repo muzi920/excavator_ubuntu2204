@@ -12,14 +12,14 @@ class AngleController:
         self.controller = controller
         
         # -------------------------------------------------------------
-        # 【预留接口】 运动量程 / 极限范围配置 (等您测试后在这里填入实际差值)
-        # 格式示例： {"min_angle": 完全收缩时的夹角, "max_angle": 完全伸展时的夹角}
+        # 【关节极限状态运动量程】 
+        # 当目标角度或当前实时角度超过这个范围时，会进行截断或紧急停止保护
         # -------------------------------------------------------------
         self.joint_limits = {
-            "bucket_arm": {"min_angle": -180.0, "max_angle": 180.0},  # 铲斗与小臂
-            "arm_boom":   {"min_angle": -10.0, "max_angle": 110.0},   # 小臂与大臂
-            "boom_swing": {"min_angle": -180.0, "max_angle": 180.0},  # 大臂与回转
-            "swing_yaw":  {"min_angle": -360.0, "max_angle": 360.0}   # 回转偏航角
+            "boom_swing": {"min_angle": -5.0, "max_angle": 45.0},   # 大臂与回转 (大臂)
+            "arm_boom":   {"min_angle": -5.0, "max_angle": 95.0},   # 小臂与大臂 (小臂)
+            "bucket_arm": {"min_angle": -95.0, "max_angle": 20.0},  # 铲斗与小臂 (铲斗)
+            "swing_yaw":  {"min_angle": -360.0, "max_angle": 360.0} # 回转偏航角 (不受限)
         }
         
         # 内部状态：记录当前是否有闭环任务在运行
@@ -60,18 +60,20 @@ class AngleController:
                 self._running_tasks[task_name] = False
         self.controller.stop_all()
 
-    def move_joint_to_angle(self, joint_name, target_angle, tolerance=2.0, ch1_mv=2000, ch2_mv=2000, ch3_mv=2000):
+    def move_joint_to_angle(self, joint_name, target_angle, tolerance=2.0, ch1_mv=2000, ch2_mv=2000, ch3_mv=2000, ramp_up_s=0.0, ramp_down_s=0.0):
         """
         核心闭环控制方法。
         参数:
             joint_name: 关节名称 (例如 "bucket_arm")
             target_angle: 目标角度 (若是回转 swing_yaw，则此值代表旋转秒数，正数右转，负数左转)
             tolerance: 容差 (当与目标角度误差小于这个值时，认为到达并停止)
+            ramp_up_s: 柔性启动加速时间(秒)
+            ramp_down_s: 柔性停止减速使能(秒，闭环中作为标识，开环中作为时间)
         """
         # 如果是回转，走时间开环控制逻辑
         if joint_name == "swing_yaw":
             # target_angle 在回转中代表秒数
-            self.move_swing_by_time(target_angle, ch1_mv, ch2_mv, ch3_mv)
+            self.move_swing_by_time(target_angle, ch1_mv, ch2_mv, ch3_mv, ramp_up_s, ramp_down_s)
             return
 
         # 1. 量程保护检查
@@ -98,11 +100,11 @@ class AngleController:
             
         threading.Thread(
             target=self._angle_control_loop,
-            args=(joint_name, target_angle, tolerance, ch1_mv, ch2_mv, ch3_mv),
+            args=(joint_name, target_angle, tolerance, ch1_mv, ch2_mv, ch3_mv, ramp_up_s, ramp_down_s),
             daemon=True
         ).start()
 
-    def move_swing_by_time(self, duration_s, ch1_mv, ch2_mv, ch3_mv):
+    def move_swing_by_time(self, duration_s, ch1_mv, ch2_mv, ch3_mv, ramp_up_s=0.0, ramp_down_s=0.0):
         """
         基于时间的开环回转控制
         duration_s: 旋转时间，正数代表右转，负数代表左转
@@ -115,37 +117,55 @@ class AngleController:
             
         threading.Thread(
             target=self._swing_time_loop,
-            args=(duration_s, ch1_mv, ch2_mv, ch3_mv),
+            args=(duration_s, ch1_mv, ch2_mv, ch3_mv, ramp_up_s, ramp_down_s),
             daemon=True
         ).start()
 
-    def _swing_time_loop(self, duration_s, ch1_mv, ch2_mv, ch3_mv):
+    def _swing_time_loop(self, duration_s, ch1_mv, ch2_mv, ch3_mv, ramp_up_s, ramp_down_s):
         direction_str = "右转" if duration_s > 0 else "左转"
         actual_duration = abs(duration_s)
         print(f"[开环控制开始] 回转 {direction_str} {actual_duration:.1f} 秒")
         
-        self.controller.set_analog(ch1_mv, ch2_mv, ch3_mv)
-        
+        # 容错：如果加减速时间超过了总时间，按比例缩放
+        if ramp_up_s + ramp_down_s > actual_duration:
+            scale = actual_duration / (ramp_up_s + ramp_down_s)
+            ramp_up_s *= scale
+            ramp_down_s *= scale
+            
         try:
             if duration_s > 0:
                 self._start_joint_movement("swing_yaw", "increase") # 映射为右转
             else:
                 self._start_joint_movement("swing_yaw", "decrease") # 映射为左转
                 
-            # 倒计时等待
             start_time = time.time()
             while self._running_tasks.get("swing_yaw"):
-                if time.time() - start_time >= actual_duration:
+                elapsed = time.time() - start_time
+                if elapsed >= actual_duration:
                     print(f"[开环控制完成] 回转动作结束 ({direction_str} {actual_duration:.1f} 秒)")
                     break
-                time.sleep(0.05)
+                    
+                # -------------------------
+                # 柔性控制 (基于时间)
+                # -------------------------
+                scale = 1.0
+                if ramp_up_s > 0 and elapsed < ramp_up_s:
+                    tau = elapsed / ramp_up_s
+                    scale = 3 * (tau ** 2) - 2 * (tau ** 3)
+                elif ramp_down_s > 0 and elapsed > (actual_duration - ramp_down_s):
+                    tau = (actual_duration - elapsed) / ramp_down_s
+                    s = 3 * (tau ** 2) - 2 * (tau ** 3)
+                    scale = 0.2 + 0.8 * s # 保底 20% 推力
+                    
+                self.controller.set_analog(int(ch1_mv * scale), int(ch2_mv * scale), int(ch3_mv * scale))
+                time.sleep(0.02)
                 
         finally:
             with self._lock:
                 self._running_tasks["swing_yaw"] = False
             self._stop_joint_movement("swing_yaw")
 
-    def _angle_control_loop(self, joint_name, target_angle, tolerance, ch1_mv, ch2_mv, ch3_mv):
+    def _angle_control_loop(self, joint_name, target_angle, tolerance, ch1_mv, ch2_mv, ch3_mv, ramp_up_s, ramp_down_s):
         """实际执行闭环逻辑的后台循环"""
         print(f"[闭环控制开始] {joint_name} 目标: {target_angle}°")
         
@@ -155,6 +175,7 @@ class AngleController:
         # 提前量补偿 (根据液压惯性设置提前停止的度数)
         # 例如设置为 2.0，意味着在距离目标还差 2 度的时候就发停止指令，靠惯性滑到目标
         advance_compensation = 2.0
+        start_time = time.time()
         
         try:
             while self._running_tasks.get(joint_name):
@@ -169,6 +190,19 @@ class AngleController:
                 if joint_name not in self._initial_diff:
                     self._initial_diff[joint_name] = diff
                 
+                # 安全保护：如果实时角度超出设定的硬极限范围，直接急停并报警
+                limits = self.joint_limits.get(joint_name)
+                if limits:
+                    # 留出 1 度的缓冲以防抖动误触发
+                    if current_angle < limits["min_angle"] - 1.0:
+                        print(f"[严重警告] {joint_name} 实时角度 {current_angle:.1f}° 已低于最小安全极限 {limits['min_angle']}°！强制急停！")
+                        self._stop_joint_movement(joint_name)
+                        break
+                    elif current_angle > limits["max_angle"] + 1.0:
+                        print(f"[严重警告] {joint_name} 实时角度 {current_angle:.1f}° 已超出最大安全极限 {limits['max_angle']}°！强制急停！")
+                        self._stop_joint_movement(joint_name)
+                        break
+                
                 # 到达目标 (加入提前量补偿)
                 # 只要距离目标的绝对值小于 容差 + 提前量，就立刻触发停止
                 # 【防冲顶逻辑】如果当前差值的符号与初始差值的符号相反，说明已经越过了目标点！必须立刻停止
@@ -181,6 +215,28 @@ class AngleController:
                     self._initial_diff.pop(joint_name, None)
                     break
                     
+                # -------------------------
+                # 柔性控制逻辑 (修改液压流量)
+                # -------------------------
+                elapsed = time.time() - start_time
+                scale = 1.0
+                
+                # 1. 柔性加速 (基于时间)
+                if ramp_up_s > 0 and elapsed < ramp_up_s:
+                    tau = elapsed / ramp_up_s
+                    scale = 3 * (tau ** 2) - 2 * (tau ** 3)
+                
+                # 2. 柔性减速 (基于剩余角度)
+                # 闭环中不知道剩余时间，所以当剩余角度较小时自动降低流量，防止冲过头
+                elif ramp_down_s > 0:
+                    ramp_down_threshold = 15.0 # 进入目标前 15 度开始减速
+                    if abs(diff) < ramp_down_threshold:
+                        tau = abs(diff) / ramp_down_threshold
+                        s = 3 * (tau ** 2) - 2 * (tau ** 3)
+                        scale = 0.2 + 0.8 * s # 最低降至 20% 流量防止卡死
+                        
+                self.controller.set_analog(int(ch1_mv * scale), int(ch2_mv * scale), int(ch3_mv * scale))
+                
                 # 根据差值的正负决定运动方向
                 if diff > 0:
                     self._start_joint_movement(joint_name, direction="increase")

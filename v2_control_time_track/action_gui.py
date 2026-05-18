@@ -14,9 +14,9 @@ class ExcavatorGUIV2:
         self.root.title("挖掘机自动调度控制_v2")
         self.root.geometry("1200x500")  # 窗口继续加宽，给右侧日志留出空间
         
-        # 尝试连接调度器
+        # 尝试连接调度器 (使用 Ubuntu 默认的 /dev/ttyUSB_Controller，如果不对应可以修改)
         try:
-            self.scheduler = ActionScheduler()
+            self.scheduler = ActionScheduler(port="/dev/ttyUSB_Controller")
             if not self.scheduler.connect():
                 messagebox.showwarning("连接失败", "无法打开串口，当前处于离线测试模式 (指令仅打印不会下发)。")
         except Exception as e:
@@ -103,16 +103,25 @@ class ExcavatorGUIV2:
         self.status_label.grid(row=4, column=0, columnspan=4, pady=5)
 
         # ==========================================
-        # 1.5 预设动作控制区
+        # 1.5 预设动作控制区 与 动作录制区
         # ==========================================
-        seq_frame = ttk.LabelFrame(left_main_frame, text="预设序列执行", padding=10)
+        seq_frame = ttk.LabelFrame(left_main_frame, text="预设序列执行 & 动作剧本录制", padding=10)
         seq_frame.pack(fill=tk.X, pady=(0, 10))
 
         self.seq_status_label = ttk.Label(seq_frame, text=f"当前进度: {self.sequence_index}/{len(self.preset_sequence)}", font=("", 10, "bold"))
         self.seq_status_label.pack(side=tk.LEFT, padx=10)
 
-        ttk.Button(seq_frame, text="执行下一步", command=self._execute_next_sequence).pack(side=tk.LEFT, padx=10)
-        ttk.Button(seq_frame, text="重置进度", command=self._reset_sequence).pack(side=tk.LEFT, padx=10)
+        ttk.Button(seq_frame, text="执行下一步", command=self._execute_next_sequence).pack(side=tk.LEFT, padx=5)
+        ttk.Button(seq_frame, text="重置进度", command=self._reset_sequence).pack(side=tk.LEFT, padx=5)
+        
+        # 新增：动作录制与保存按钮
+        self.is_recording = False
+        self.recorded_actions = []
+        
+        self.record_btn = tk.Button(seq_frame, text="🔴 开始录制剧本", command=self._toggle_recording, bg="#ffcccc")
+        self.record_btn.pack(side=tk.LEFT, padx=15)
+        
+        ttk.Button(seq_frame, text="💾 保存录制为 JSON", command=self._save_recorded_json).pack(side=tk.LEFT, padx=5)
 
         # ==========================================
         # 2. 动作触发区
@@ -249,6 +258,52 @@ class ExcavatorGUIV2:
         self._append_log("--- 预设序列已重置 ---")
 
     # ==========================================
+    # 动作录制与 JSON 保存逻辑
+    # ==========================================
+    def _toggle_recording(self):
+        if not self.is_recording:
+            # 开始录制
+            self.is_recording = True
+            self.recorded_actions = []
+            self.record_btn.config(text="⏹ 停止录制剧本", bg="#ccffcc")
+            self._append_log("=========== 开始录制新剧本 ===========")
+            messagebox.showinfo("录制已开始", "现在您在下方点击的所有动作（及其模拟量和时间参数）都会被记录下来。")
+        else:
+            # 停止录制
+            self.is_recording = False
+            self.record_btn.config(text="🔴 开始录制剧本", bg="#ffcccc")
+            self._append_log(f"=========== 录制结束 (共 {len(self.recorded_actions)} 步) ===========")
+
+    def _save_recorded_json(self):
+        if self.is_recording:
+            messagebox.showwarning("警告", "请先点击停止录制，然后再保存！")
+            return
+            
+        if not self.recorded_actions:
+            messagebox.showinfo("提示", "当前没有录制任何动作。")
+            return
+            
+        import json
+        from tkinter import filedialog
+        
+        # 弹出保存文件对话框
+        file_path = filedialog.asksaveasfilename(
+            defaultextension=".json",
+            initialdir=os.path.dirname(__file__),
+            title="保存动作剧本",
+            filetypes=[("JSON files", "*.json")]
+        )
+        
+        if file_path:
+            try:
+                with open(file_path, 'w', encoding='utf-8') as f:
+                    json.dump(self.recorded_actions, f, ensure_ascii=False, indent=2)
+                messagebox.showinfo("保存成功", f"动作剧本已成功保存至:\n{file_path}")
+                self._append_log(f"[保存] 剧本已导出到 JSON 文件。")
+            except Exception as e:
+                messagebox.showerror("保存失败", str(e))
+
+    # ==========================================
     # 控制与调度逻辑
     # ==========================================
 
@@ -286,6 +341,21 @@ class ExcavatorGUIV2:
         v1, v2, v3 = self.ch1_var.get(), self.ch2_var.get(), self.ch3_var.get()
         log_msg = f"▶ {action_name}\n  时长: {duration}s\n  推力: [{v1}, {v2}, {v3}]\n"
         self._append_log(log_msg)
+        
+        # 录制动作到剧本中
+        if hasattr(self, 'is_recording') and self.is_recording:
+            # 找到 action_func 对应的英文函数名（即我们在 self.preset_sequence 里使用的 action_id）
+            action_id = action_func.__name__
+            self.recorded_actions.append({
+                "step": len(self.recorded_actions) + 1,
+                "action": action_id,
+                "description": action_name,
+                "duration_s": duration,
+                "ch1_mv": v1,
+                "ch2_mv": v2,
+                "ch3_mv": v3
+            })
+            self._append_log(f"[录制] 已将 {action_name} 记录到剧本序列中。")
         
         # 使用线程去调用 scheduler，避免阻塞 GUI
         threading.Thread(target=self._run_scheduler_task, args=(action_name, action_func, duration), daemon=True).start()

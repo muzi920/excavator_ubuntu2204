@@ -1,0 +1,74 @@
+[
+  {
+    "step": 1,
+    "joint": "boom_swing",
+    "description": "大臂落下至相对回转 20 度",
+    "target_val": 20.0,
+    "ch1_mv": 2000,
+    "ch2_mv": 2000,
+    "ch3_mv": 2000
+  },
+  {
+    "step": 2,
+    "joint": "bucket_arm",
+    "description": "铲斗回拉至相对小臂 80 度",
+    "target_val": 80.0,
+    "ch1_mv": 2000,
+    "ch2_mv": 2000,
+    "ch3_mv": 2000
+  },
+  {
+    "step": 3,
+    "joint": "arm_boom",
+    "description": "小臂回拉至相对大臂 60 度",
+    "target_val": 60.0,
+    "ch1_mv": 2000,
+    "ch2_mv": 2000,
+    "ch3_mv": 2000
+  },
+  {
+    "step": 4,
+    "joint": "boom_swing",
+    "description": "大臂抬起至相对回转 70 度",
+    "target_val": 70.0,
+    "ch1_mv": 2000,
+    "ch2_mv": 2000,
+    "ch3_mv": 2000
+  },
+  {
+    "step": 5,
+    "joint": "swing_yaw",
+    "description": "回转左转 3 秒 (开环时间)",
+    "duration_s": -3.0,
+    "ch1_mv": 2000,
+    "ch2_mv": 2000,
+    "ch3_mv": 2000
+  },
+  {
+    "step": 6,
+    "joint": "bucket_arm",
+    "description": "铲斗外推至相对小臂 10 度",
+    "target_val": 10.0,
+    "ch1_mv": 2000,
+    "ch2_mv": 2000,
+    "ch3_mv": 2000
+  },
+  {
+    "step": 7,
+    "joint": "arm_boom",
+    "description": "小臂前推至相对大臂 100 度",
+    "target_val": 100.0,
+    "ch1_mv": 2000,
+    "ch2_mv": 2000,
+    "ch3_mv": 2000
+  },
+  {
+    "step": 8,
+    "joint": "swing_yaw",
+    "description": "回转右转 3 秒 (开环时间)",
+    "duration_s": 3.0,
+    "ch1_mv": 2000,
+    "ch2_mv": 2000,
+    "ch3_mv": 2000
+  }
+]

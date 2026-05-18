@@ -1,0 +1,112 @@
+[
+  {
+    "step": 1,
+    "action": "boom_down",
+    "description": "大臂落下 (加入了柔性加减速控制)",
+    "duration_s": 1.5,
+    "ch1_mv": 2000,
+    "ch2_mv": 2000,
+    "ch3_mv": 2000,
+    "ramp_up_s": 0.3,
+    "ramp_down_s": 0.3
+  },
+  {
+    "step": 2,
+    "action": "bucket_in",
+    "description": "铲斗回拉 (加入了柔性加减速控制，增大液压补偿)",
+    "duration_s": 1.8,
+    "ch1_mv": 3500,
+    "ch2_mv": 3500,
+    "ch3_mv": 3500,
+    "ramp_up_s": 0.3,
+    "ramp_down_s": 0.3
+  },
+  {
+    "step": 3,
+    "action": "arm_pull",
+    "description": "小臂回拉",
+    "duration_s": 0.7,
+    "ch1_mv": 2000,
+    "ch2_mv": 2000,
+    "ch3_mv": 2000,
+    "ramp_up_s": 0.2,
+    "ramp_down_s": 0.2
+  },
+  {
+    "step": 4,
+    "action": "bucket_in",
+    "description": "铲斗回拉 (增大液压补偿)",
+    "duration_s": 0.7,
+    "ch1_mv": 3500,
+    "ch2_mv": 3500,
+    "ch3_mv": 3500,
+    "ramp_up_s": 0.2,
+    "ramp_down_s": 0.2
+  },
+  {
+    "step": 5,
+    "action": "boom_up",
+    "description": "大臂抬起 (对抗重力，提升推力)",
+    "duration_s": 1.5,
+    "ch1_mv": 4500,
+    "ch2_mv": 4500,
+    "ch3_mv": 4500,
+    "ramp_up_s": 0.3,
+    "ramp_down_s": 0.3
+  },
+  {
+    "step": 6,
+    "action": "swing_left",
+    "description": "回转左转",
+    "duration_s": 3.5,
+    "ch1_mv": 2000,
+    "ch2_mv": 2000,
+    "ch3_mv": 2000,
+    "ramp_up_s": 0.5,
+    "ramp_down_s": 0.5
+  },
+  {
+    "step": 7,
+    "action": "bucket_out",
+    "description": "铲斗外推 (增大液压补偿)",
+    "duration_s": 1.0,
+    "ch1_mv": 3000,
+    "ch2_mv": 3000,
+    "ch3_mv": 3000,
+    "ramp_up_s": 0.2,
+    "ramp_down_s": 0.2
+  },
+  {
+    "step": 8,
+    "action": "arm_push",
+    "description": "小臂前推 (克服摩擦，提升推力)",
+    "duration_s": 1.0,
+    "ch1_mv": 3500,
+    "ch2_mv": 3500,
+    "ch3_mv": 3500,
+    "ramp_up_s": 0.2,
+    "ramp_down_s": 0.2
+  },
+  {
+    "step": 9,
+    "action": "bucket_out",
+    "description": "铲斗外推 (增大液压补偿)",
+    "duration_s": 1.5,
+    "ch1_mv": 3000,
+    "ch2_mv": 3000,
+    "ch3_mv": 3000,
+    "ramp_up_s": 0.3,
+    "ramp_down_s": 0.3
+  },
+  {
+    "step": 10,
+    "action": "swing_right",
+    "description": "回转右转",
+    "duration_s": 3.5,
+    "ch1_mv": 2000,
+    "ch2_mv": 2000,
+    "ch3_mv": 2000,
+    "ramp_up_s": 0.5,
+    "ramp_down_s": 0.5
+  }
+]

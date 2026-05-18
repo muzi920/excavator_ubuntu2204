@@ -1,12 +1,13 @@
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, filedialog
 import sys
 import os
 import time
+import json
 
 # 引入底层库
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "v1")))
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "v3", "WitStandardModbus_WT901C485-main", "Python", "Python-SDK-WT901C485_new")))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "v1_control_base")))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "v3_sensor_read_wit", "WitStandardModbus_WT901C485-main", "Python", "Python-SDK-WT901C485_new")))
 
 from zs_excavator_controller import build_controller
 import device_model
@@ -43,10 +44,20 @@ class V4ClosedLoopGUI:
         self.target_bucket_arm = tk.DoubleVar(value=90.0)
         self.target_arm_boom = tk.DoubleVar(value=90.0)
         self.target_boom_swing = tk.DoubleVar(value=90.0)
-        self.target_swing_yaw = tk.DoubleVar(value=0.0)
+        self.swing_duration = tk.DoubleVar(value=3.0) # 明确为回转的时间变量
+        
+        # 默认液压流量设置为 2000
         self.ch1_var = tk.IntVar(value=2000)
         self.ch2_var = tk.IntVar(value=2000)
         self.ch3_var = tk.IntVar(value=2000)
+        
+        # 柔性控制加减速参数
+        self.ramp_up_var = tk.DoubleVar(value=0.2)
+        self.ramp_down_var = tk.DoubleVar(value=0.2)
+        
+        # 新增剧本录制相关变量
+        self.is_recording = False
+        self.recorded_script = []
 
         # 初始化传感器
         self._init_sensors()
@@ -113,14 +124,19 @@ class V4ClosedLoopGUI:
         self.lbl_swing_yaw.grid(row=1, column=1, padx=20, pady=5, sticky="w")
 
         # --- 中间：推力配置 ---
-        analog_frame = ttk.LabelFrame(main_frame, text="模拟量推力配置", padding=10)
+        analog_frame = ttk.LabelFrame(main_frame, text="模拟量与柔性参数配置", padding=10)
         analog_frame.pack(fill=tk.X, pady=5)
         ttk.Label(analog_frame, text="CH1(左):").pack(side=tk.LEFT, padx=5)
-        ttk.Entry(analog_frame, textvariable=self.ch1_var, width=8).pack(side=tk.LEFT, padx=5)
+        ttk.Entry(analog_frame, textvariable=self.ch1_var, width=6).pack(side=tk.LEFT, padx=5)
         ttk.Label(analog_frame, text="CH2(右):").pack(side=tk.LEFT, padx=5)
-        ttk.Entry(analog_frame, textvariable=self.ch2_var, width=8).pack(side=tk.LEFT, padx=5)
+        ttk.Entry(analog_frame, textvariable=self.ch2_var, width=6).pack(side=tk.LEFT, padx=5)
         ttk.Label(analog_frame, text="CH3(液压):").pack(side=tk.LEFT, padx=5)
-        ttk.Entry(analog_frame, textvariable=self.ch3_var, width=8).pack(side=tk.LEFT, padx=5)
+        ttk.Entry(analog_frame, textvariable=self.ch3_var, width=6).pack(side=tk.LEFT, padx=5)
+        
+        ttk.Label(analog_frame, text="|  加速时间(s):").pack(side=tk.LEFT, padx=(15, 5))
+        ttk.Entry(analog_frame, textvariable=self.ramp_up_var, width=5).pack(side=tk.LEFT, padx=5)
+        ttk.Label(analog_frame, text="减速时间(s):").pack(side=tk.LEFT, padx=5)
+        ttk.Entry(analog_frame, textvariable=self.ramp_down_var, width=5).pack(side=tk.LEFT, padx=5)
 
         # --- 下方：闭环目标控制 ---
         ctrl_frame = ttk.LabelFrame(main_frame, text="闭环角度目标控制", padding=10)
@@ -131,19 +147,93 @@ class V4ClosedLoopGUI:
         self._create_ctrl_row(ctrl_frame, 2, "大臂-回转", "boom_swing", self.target_boom_swing, "目标角度(°):")
         
         # 回转改为时间控制，提示词改变
-        self._create_ctrl_row(ctrl_frame, 3, "回转动作", "swing_yaw", self.target_swing_yaw, "目标时间(秒): (正右负左)")
+        self._create_ctrl_row(ctrl_frame, 3, "回转动作", "swing_yaw", self.swing_duration, "执行时间(秒): (正右负左)")
 
-        ttk.Button(main_frame, text="【急停所有闭环动作】", command=self.angle_ctrl.stop_all).pack(pady=20, ipadx=20, ipady=10)
+        # --- 底部：剧本录制与保存区 ---
+        record_frame = ttk.Frame(main_frame)
+        record_frame.pack(fill=tk.X, pady=10)
+        
+        self.btn_record = tk.Button(record_frame, text="🔴 开始录制剧本", command=self._toggle_recording, bg="#ffcccc", width=15)
+        self.btn_record.pack(side=tk.LEFT, padx=10)
+        
+        ttk.Button(record_frame, text="💾 保存为 JSON 剧本", command=self._save_script, width=20).pack(side=tk.LEFT, padx=10)
+        
+        ttk.Button(main_frame, text="【急停所有闭环动作】", command=self.angle_ctrl.stop_all).pack(pady=10, ipadx=20, ipady=10)
+
+    def _toggle_recording(self):
+        if not self.is_recording:
+            self.is_recording = True
+            self.recorded_script = []
+            self.btn_record.config(text="⏹ 停止录制剧本", bg="#ccffcc")
+            messagebox.showinfo("开始录制", "已开始录制剧本。现在您下发的每一次【开始移动】都会被记录下来。")
+        else:
+            self.is_recording = False
+            self.btn_record.config(text="🔴 开始录制剧本", bg="#ffcccc")
+            messagebox.showinfo("停止录制", f"录制已停止，当前共记录了 {len(self.recorded_script)} 个动作，请点击保存。")
+
+    def _save_script(self):
+        if self.is_recording:
+            messagebox.showwarning("警告", "请先停止录制，再进行保存。")
+            return
+            
+        if not self.recorded_script:
+            messagebox.showwarning("提示", "当前没有录制任何动作！")
+            return
+            
+        file_path = filedialog.asksaveasfilename(
+            defaultextension=".json",
+            initialdir=os.path.dirname(__file__),
+            title="保存闭环剧本",
+            filetypes=[("JSON files", "*.json")]
+        )
+        
+        if file_path:
+            try:
+                with open(file_path, 'w', encoding='utf-8') as f:
+                    json.dump(self.recorded_script, f, ensure_ascii=False, indent=2)
+                messagebox.showinfo("保存成功", f"成功保存 {len(self.recorded_script)} 步动作到:\n{file_path}")
+            except Exception as e:
+                messagebox.showerror("保存失败", str(e))
+
+    def _handle_move(self, joint_name, label_text, target_val):
+        """处理移动动作并录制剧本"""
+        ch1 = self.ch1_var.get()
+        ch2 = self.ch2_var.get()
+        ch3 = self.ch3_var.get()
+        ramp_up = self.ramp_up_var.get()
+        ramp_down = self.ramp_down_var.get()
+        
+        if self.is_recording:
+            record_item = {
+                "step": len(self.recorded_script) + 1,
+                "joint": joint_name,
+                "description": label_text,
+                "ch1_mv": ch1,
+                "ch2_mv": ch2,
+                "ch3_mv": ch3,
+                "ramp_up_s": ramp_up,
+                "ramp_down_s": ramp_down
+            }
+            if joint_name == "swing_yaw":
+                record_item["duration_s"] = target_val
+            else:
+                record_item["target_val"] = target_val
+                
+            self.recorded_script.append(record_item)
+            print(f"[录制] 已记录: {label_text} 参数: {target_val}")
+            
+        self.angle_ctrl.move_joint_to_angle(
+            joint_name, target_val, tolerance=2.0, 
+            ch1_mv=ch1, ch2_mv=ch2, ch3_mv=ch3,
+            ramp_up_s=ramp_up, ramp_down_s=ramp_down
+        )
 
     def _create_ctrl_row(self, parent, row, label_text, joint_name, target_var, entry_label):
         ttk.Label(parent, text=f"{label_text} {entry_label}").grid(row=row, column=0, padx=10, pady=10, sticky="e")
         ttk.Entry(parent, textvariable=target_var, width=15).grid(row=row, column=1, padx=5, pady=10)
         ttk.Button(
             parent, text=f"开始移动 {label_text}", 
-            command=lambda: self.angle_ctrl.move_joint_to_angle(
-                joint_name, target_var.get(), tolerance=2.0, 
-                ch1_mv=self.ch1_var.get(), ch2_mv=self.ch2_var.get(), ch3_mv=self.ch3_var.get()
-            )
+            command=lambda: self._handle_move(joint_name, label_text, target_var.get())
         ).grid(row=row, column=2, padx=20, pady=10)
 
     def _update_loop(self):
@@ -166,10 +256,15 @@ class V4ClosedLoopGUI:
 
     def on_closing(self):
         print("正在关闭...")
+        self.is_running = False
         
         # 1. 停止角度控制器的线程和控制指令
         if hasattr(self, 'angle_ctrl') and self.angle_ctrl:
-            self.angle_ctrl.stop_all()
+            try:
+                if hasattr(self.base_controller, 'transport') and getattr(self.base_controller.transport, 'ser', None) and self.base_controller.transport.ser.is_open:
+                    self.angle_ctrl.stop_all()
+            except Exception as e:
+                print(f"关闭时急停异常: {e}")
             
         # 2. 通知所有传感器停止轮询
         for dev in self.devices:

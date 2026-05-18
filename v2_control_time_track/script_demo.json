@@ -1,0 +1,56 @@
+[
+  {
+    "step": 1,
+    "action": "wait",
+    "description": "准备阶段，发呆 1 秒",
+    "duration_s": 1.0,
+    "ch1_mv": 0,
+    "ch2_mv": 0,
+    "ch3_mv": 0
+  },
+  {
+    "step": 2,
+    "action": "boom_up",
+    "description": "大臂抬起，克服重力需要大推力",
+    "duration_s": 2.5,
+    "ch1_mv": 5000,
+    "ch2_mv": 5000,
+    "ch3_mv": 5000
+  },
+  {
+    "step": 3,
+    "action": "bucket_in",
+    "description": "铲斗回拉装料",
+    "duration_s": 1.5,
+    "ch1_mv": 3000,
+    "ch2_mv": 3000,
+    "ch3_mv": 3000
+  },
+  {
+    "step": 4,
+    "action": "swing_left",
+    "description": "回转机身向左移动",
+    "duration_s": 2.0,
+    "ch1_mv": 2500,
+    "ch2_mv": 2500,
+    "ch3_mv": 2500
+  },
+  {
+    "step": 5,
+    "action": "boom_down",
+    "description": "大臂落下，顺应重力推力可以设为极小甚至0",
+    "duration_s": 1.0,
+    "ch1_mv": 0,
+    "ch2_mv": 0,
+    "ch3_mv": 0
+  },
+  {
+    "step": 6,
+    "action": "bucket_out",
+    "description": "铲斗外推卸料",
+    "duration_s": 1.5,
+    "ch1_mv": 3500,
+    "ch2_mv": 3500,
+    "ch3_mv": 3500
+  }
+]
