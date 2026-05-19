@@ -58,6 +58,14 @@ class V4ClosedLoopGUI:
         # 新增剧本录制相关变量
         self.is_recording = False
         self.recorded_script = []
+        
+        # 保存当前实时计算的角度
+        self.current_angles = {
+            "bucket_arm": 0.0,
+            "arm_boom": 0.0,
+            "boom_swing": 0.0,
+            "swing_yaw": 0.0
+        }
 
         # 初始化传感器
         self._init_sensors()
@@ -195,6 +203,43 @@ class V4ClosedLoopGUI:
             except Exception as e:
                 messagebox.showerror("保存失败", str(e))
 
+    def _record_current_angle(self, joint_name, label_text, target_var, is_init=False):
+        """手动示教：读取当前传感器角度并记录到剧本中"""
+        if not self.is_recording:
+            messagebox.showwarning("提示", "请先点击下方的『🔴 开始录制剧本』按钮！")
+            return
+            
+        current_val = round(self.current_angles.get(joint_name, 0.0), 1)
+        
+        # 将当前角度同步显示到输入框中
+        target_var.set(current_val)
+        
+        ch1 = self.ch1_var.get()
+        ch2 = self.ch2_var.get()
+        ch3 = self.ch3_var.get()
+        ramp_up = self.ramp_up_var.get()
+        ramp_down = self.ramp_down_var.get()
+        
+        desc = f"{label_text}(手动示教{' - 初始位置' if is_init else ''})"
+        
+        record_item = {
+            "step": len(self.recorded_script) + 1,
+            "joint": joint_name,
+            "description": desc,
+            "ch1_mv": ch1,
+            "ch2_mv": ch2,
+            "ch3_mv": ch3,
+            "ramp_up_s": ramp_up,
+            "ramp_down_s": ramp_down,
+            "target_val": current_val
+        }
+        
+        if is_init:
+            record_item["is_init_step"] = True
+                
+        self.recorded_script.append(record_item)
+        print(f"[示教录制] 已记录: {desc} 当前角度: {current_val}°")
+
     def _handle_move(self, joint_name, label_text, target_val):
         """处理移动动作并录制剧本"""
         ch1 = self.ch1_var.get()
@@ -234,7 +279,19 @@ class V4ClosedLoopGUI:
         ttk.Button(
             parent, text=f"开始移动 {label_text}", 
             command=lambda: self._handle_move(joint_name, label_text, target_var.get())
-        ).grid(row=row, column=2, padx=20, pady=10)
+        ).grid(row=row, column=2, padx=10, pady=10)
+        
+        # 对于角度控制的三个关节，添加“记录当前角度”和“记录初始位置”的示教按钮
+        if joint_name != "swing_yaw":
+            ttk.Button(
+                parent, text=f"📍 记录当前角度", 
+                command=lambda j=joint_name, l=label_text, v=target_var: self._record_current_angle(j, l, v, is_init=False)
+            ).grid(row=row, column=3, padx=5, pady=10)
+            
+            ttk.Button(
+                parent, text=f"🏠 记录为初始位置", 
+                command=lambda j=joint_name, l=label_text, v=target_var: self._record_current_angle(j, l, v, is_init=True)
+            ).grid(row=row, column=4, padx=5, pady=10)
 
     def _update_loop(self):
         # 更新传感器数据给控制器
@@ -251,6 +308,12 @@ class V4ClosedLoopGUI:
         self.lbl_arm_boom.config(text=f"小臂-大臂 夹角: {diff_ab:6.1f}°")
         self.lbl_boom_swing.config(text=f"大臂-回转 夹角: {diff_bs:6.1f}°")
         self.lbl_swing_yaw.config(text=f"回转 偏航角: {yaw_s:6.1f}°")
+        
+        # 更新当前角度缓存，供示教录制使用
+        self.current_angles["bucket_arm"] = diff_ba
+        self.current_angles["arm_boom"] = diff_ab
+        self.current_angles["boom_swing"] = diff_bs
+        self.current_angles["swing_yaw"] = yaw_s
 
         self.root.after(50, self._update_loop)
 

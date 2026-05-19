@@ -226,6 +226,7 @@ class ExcavatorController:
         self._current_ch1_mv = 0
         self._current_ch2_mv = 0
         self._current_ch3_mv = 0
+        self.last_analog_values = (0, 0, 0) # 记录最后一次发送的模拟量 (CH1, CH2, CH3)
 
     def connect(self, do_handshake: bool = True) -> bool:
         """初始化并建立连接"""
@@ -283,6 +284,7 @@ class ExcavatorController:
         if ch3_mv is not None:
             self._current_ch3_mv = ch3_mv
 
+        self.last_analog_values = (self._current_ch1_mv, self._current_ch2_mv, self._current_ch3_mv)
         data = [0x00] * 8
         data[0:2] = self._u16_bytes(self._current_ch1_mv)
         data[2:4] = self._u16_bytes(self._current_ch2_mv)
