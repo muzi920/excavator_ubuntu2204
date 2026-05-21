@@ -46,9 +46,8 @@ class V4ClosedLoopGUI:
         self.target_boom_swing = tk.DoubleVar(value=90.0)
         self.swing_duration = tk.DoubleVar(value=3.0) # 明确为回转的时间变量
         
-        # 默认液压流量设置为 2000
-        self.ch1_var = tk.IntVar(value=2000)
-        self.ch2_var = tk.IntVar(value=2000)
+        self.ch1_var = tk.IntVar(value=0)
+        self.ch2_var = tk.IntVar(value=0)
         self.ch3_var = tk.IntVar(value=2000)
         
         # 柔性控制加减速参数
@@ -135,9 +134,9 @@ class V4ClosedLoopGUI:
         analog_frame = ttk.LabelFrame(main_frame, text="模拟量与柔性参数配置", padding=10)
         analog_frame.pack(fill=tk.X, pady=5)
         ttk.Label(analog_frame, text="CH1(左):").pack(side=tk.LEFT, padx=5)
-        ttk.Entry(analog_frame, textvariable=self.ch1_var, width=6).pack(side=tk.LEFT, padx=5)
+        ttk.Entry(analog_frame, textvariable=self.ch1_var, width=6, state="disabled").pack(side=tk.LEFT, padx=5)
         ttk.Label(analog_frame, text="CH2(右):").pack(side=tk.LEFT, padx=5)
-        ttk.Entry(analog_frame, textvariable=self.ch2_var, width=6).pack(side=tk.LEFT, padx=5)
+        ttk.Entry(analog_frame, textvariable=self.ch2_var, width=6, state="disabled").pack(side=tk.LEFT, padx=5)
         ttk.Label(analog_frame, text="CH3(液压):").pack(side=tk.LEFT, padx=5)
         ttk.Entry(analog_frame, textvariable=self.ch3_var, width=6).pack(side=tk.LEFT, padx=5)
         
@@ -214,8 +213,8 @@ class V4ClosedLoopGUI:
         # 将当前角度同步显示到输入框中
         target_var.set(current_val)
         
-        ch1 = self.ch1_var.get()
-        ch2 = self.ch2_var.get()
+        ch1 = 0
+        ch2 = 0
         ch3 = self.ch3_var.get()
         ramp_up = self.ramp_up_var.get()
         ramp_down = self.ramp_down_var.get()
@@ -242,8 +241,8 @@ class V4ClosedLoopGUI:
 
     def _handle_move(self, joint_name, label_text, target_val):
         """处理移动动作并录制剧本"""
-        ch1 = self.ch1_var.get()
-        ch2 = self.ch2_var.get()
+        ch1 = 0
+        ch2 = 0
         ch3 = self.ch3_var.get()
         ramp_up = self.ramp_up_var.get()
         ramp_down = self.ramp_down_var.get()

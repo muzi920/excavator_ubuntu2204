@@ -6,6 +6,8 @@ import argparse
 import threading
 import tkinter as tk
 from tkinter import ttk
+import csv
+import datetime
 
 # 引入底层库
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "v1_control_base")))
@@ -135,6 +137,13 @@ class ClosedLoopScriptRunner:
         }
         self.devices = []
         self._running = True
+
+        self.sensor_ts = {
+            "大臂": None,
+            "小臂": None,
+            "铲斗": None,
+            "回转": None,
+        }
         
         # 用于与 GUI 共享的执行状态信息
         self.current_execution_info = {
@@ -144,6 +153,10 @@ class ClosedLoopScriptRunner:
             "step_desc": "",
             "target_val": 0.0
         }
+
+        self._telemetry_lock = threading.Lock()
+        self._telemetry_fp = None
+        self._telemetry_writer = None
 
     def init_sensors(self):
         addrLis = [0x50, 0x51, 0x52, 0x53]
@@ -183,13 +196,98 @@ class ClosedLoopScriptRunner:
                 if data and "AngX" in data:
                     self.sensor_data[name]["pitch"] = data.get("AngX", 0.0)
                     self.sensor_data[name]["yaw"] = data.get("AngZ", 0.0)
+                    self.sensor_ts[name] = time.time()
                     dm.deviceData[addr].clear()
         return update
 
     def _update_loop(self):
         while self._running:
-            self.angle_ctrl.update_sensor_data(self.sensor_data)
+            self.angle_ctrl.update_sensor_state(self.sensor_data, self.sensor_ts)
+            self._write_telemetry_row()
             time.sleep(0.05)
+
+    def _open_telemetry(self, path: str):
+        with self._telemetry_lock:
+            if self._telemetry_fp:
+                return
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            self._telemetry_fp = open(path, "w", newline="", encoding="utf-8")
+            self._telemetry_writer = csv.DictWriter(
+                self._telemetry_fp,
+                fieldnames=[
+                    "ts",
+                    "loop_current",
+                    "loop_total",
+                    "step_num",
+                    "joint",
+                    "target_val",
+                    "ch1",
+                    "ch2",
+                    "ch3",
+                    "bucket_arm",
+                    "arm_boom",
+                    "boom_swing",
+                    "swing_yaw",
+                    "bucket_ts_age_s",
+                    "arm_ts_age_s",
+                    "boom_ts_age_s",
+                    "swing_ts_age_s",
+                ],
+            )
+            self._telemetry_writer.writeheader()
+
+    def _close_telemetry(self):
+        with self._telemetry_lock:
+            if self._telemetry_fp:
+                try:
+                    self._telemetry_fp.flush()
+                    self._telemetry_fp.close()
+                except Exception:
+                    pass
+            self._telemetry_fp = None
+            self._telemetry_writer = None
+
+    def _write_telemetry_row(self):
+        with self._telemetry_lock:
+            if not self._telemetry_writer:
+                return
+            info = self.current_execution_info
+            d = self.sensor_data
+            now = time.time()
+            try:
+                ch1, ch2, ch3 = self.base_controller.last_analog_values
+            except Exception:
+                ch1, ch2, ch3 = (None, None, None)
+
+            diff_ba = d['铲斗']['pitch'] - d['小臂']['pitch']
+            diff_ab = d['小臂']['pitch'] - d['大臂']['pitch']
+            diff_bs = d['大臂']['pitch'] - d['回转']['pitch']
+            yaw_s = d['回转']['yaw']
+
+            def age(name):
+                ts = self.sensor_ts.get(name)
+                return None if ts is None else max(0.0, now - ts)
+
+            row = {
+                "ts": now,
+                "loop_current": info.get("loop_current"),
+                "loop_total": info.get("loop_total"),
+                "step_num": info.get("step_num"),
+                "joint": info.get("joint"),
+                "target_val": info.get("target_val"),
+                "ch1": ch1,
+                "ch2": ch2,
+                "ch3": ch3,
+                "bucket_arm": round(diff_ba, 3),
+                "arm_boom": round(diff_ab, 3),
+                "boom_swing": round(diff_bs, 3),
+                "swing_yaw": round(yaw_s, 3),
+                "bucket_ts_age_s": age("铲斗"),
+                "arm_ts_age_s": age("小臂"),
+                "boom_ts_age_s": age("大臂"),
+                "swing_ts_age_s": age("回转"),
+            }
+            self._telemetry_writer.writerow(row)
 
     def load_script(self, json_path: str) -> list:
         if not os.path.exists(json_path):
@@ -199,7 +297,7 @@ class ClosedLoopScriptRunner:
         print(f"[ScriptRunner] 成功加载闭环剧本: {json_path}，共 {len(script_data)} 个步骤。")
         return script_data
 
-    def execute_script(self, script_data: list, loop_count: int = 1):
+    def execute_script(self, script_data: list, loop_count: int = 1, from_step: int | None = None, to_step: int | None = None, step_interval_s: float = 0.1):
         if not self.base_controller.connect():
             print("[警告] 串口连接失败，当前处于离线测试模式 (指令仅打印不会下发)！\n")
             
@@ -213,9 +311,22 @@ class ClosedLoopScriptRunner:
                     print(f"\n>>>>>>>>>>> 开始第 {loop}/{loop_count} 次循环 <<<<<<<<<<<")
                     
                 for step in script_data:
+                    if not self._running or getattr(self.angle_ctrl, "fatal_stop", False):
+                        raise RuntimeError(getattr(self.angle_ctrl, "fatal_reason", "已触发急停"))
+
                     step_num = step.get('step', '?')
                     joint = step.get('joint', '')
                     desc = step.get('description', '')
+
+                    try:
+                        step_num_int = int(step_num)
+                    except Exception:
+                        step_num_int = None
+
+                    if from_step is not None and step_num_int is not None and step_num_int < from_step:
+                        continue
+                    if to_step is not None and step_num_int is not None and step_num_int > to_step:
+                        continue
                     
                     if joint == "swing_yaw":
                         target_val = step.get('duration_s', step.get('target_val', 0.0))
@@ -226,11 +337,12 @@ class ClosedLoopScriptRunner:
                     self.current_execution_info.update({
                         "step_num": step_num,
                         "step_desc": desc,
-                        "target_val": target_val
+                        "target_val": target_val,
+                        "joint": joint,
                     })
                         
-                    ch1 = step.get('ch1_mv', 2000)
-                    ch2 = step.get('ch2_mv', 2000)
+                    ch1 = 0
+                    ch2 = 0
                     ch3 = step.get('ch3_mv', 2000)
                     
                     ramp_up = step.get('ramp_up_s', 0.0)
@@ -259,9 +371,12 @@ class ClosedLoopScriptRunner:
                     time.sleep(0.1) # 等待线程启动
                     while self.angle_ctrl._running_tasks.get(joint, False):
                         time.sleep(0.1)
+
+                    if getattr(self.angle_ctrl, "fatal_stop", False):
+                        raise RuntimeError(getattr(self.angle_ctrl, "fatal_reason", "已触发急停"))
                         
                     # 动作之间强制加一个安全间隔
-                    time.sleep(0.5)
+                    time.sleep(max(0.0, float(step_interval_s)))
                 
                 if loop < loop_count:
                     print(f"\n第 {loop} 次循环完成，等待 1 秒后开始下一次...")
@@ -273,19 +388,25 @@ class ClosedLoopScriptRunner:
             print(f"\n[异常] 剧本执行中断: {e}")
         finally:
             print("\n============= 剧本执行结束，安全复位 =============")
-            self.angle_ctrl.stop_all()
             self.close()
 
     def close(self):
         self._running = False
         self.angle_ctrl.stop_all()
+        t0 = time.time()
+        while time.time() - t0 < 2.0:
+            if not any(self.angle_ctrl._running_tasks.values()):
+                break
+            time.sleep(0.05)
         for dev in self.devices:
             dev.stopLoopRead()
         time.sleep(0.5)
         for dev in self.devices:
             dev.isOpen = False
             dev.closeDevice()
+        time.sleep(0.2)
         self.base_controller.close()
+        self._close_telemetry()
 
 
 if __name__ == "__main__":
@@ -296,6 +417,14 @@ if __name__ == "__main__":
                         help="控制器串口路径 (默认: /dev/ttyUSB_Controller)")
     parser.add_argument("--times", type=int, default=1,
                         help="剧本循环执行的次数 (默认: 1)")
+    parser.add_argument("--from-step", type=int, default=None,
+                        help="从指定 step 开始执行 (包含)")
+    parser.add_argument("--to-step", type=int, default=None,
+                        help="执行到指定 step 结束 (包含)")
+    parser.add_argument("--step-interval", type=float, default=0.1,
+                        help="每步动作结束后的间隔时间(秒)，默认 0.1")
+    parser.add_argument("--telemetry", type=str, default="",
+                        help="保存遥测 CSV 文件(可选)。留空则不保存")
 
     args = parser.parse_args()
     loop_count = max(1, args.times)
@@ -306,11 +435,21 @@ if __name__ == "__main__":
     try:
         runner.init_sensors()
         script = runner.load_script(script_path)
+
+        if args.telemetry:
+            telemetry_path = args.telemetry
+            if not os.path.isabs(telemetry_path):
+                telemetry_path = os.path.join(os.path.dirname(__file__), telemetry_path)
+            runner._open_telemetry(telemetry_path)
+        else:
+            log_dir = os.path.join(os.path.dirname(__file__), "logs")
+            ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            runner._open_telemetry(os.path.join(log_dir, f"telemetry_{ts}.csv"))
         
         # 启动后台线程来执行剧本，主线程运行 GUI
         threading.Thread(
             target=runner.execute_script, 
-            args=(script, loop_count),
+            args=(script, loop_count, args.from_step, args.to_step, args.step_interval),
             daemon=True
         ).start()
         

@@ -1,5 +1,6 @@
 import struct
 import time
+import os
 from typing import Dict, Iterable, List, Optional
 
 import serial
@@ -21,6 +22,7 @@ class ZSCanTransport:
         self.baudrate = baudrate
         self.timeout = timeout
         self.ser: Optional[serial.Serial] = None
+        self.debug_tx = os.environ.get("ZS_CAN_DEBUG", "0") == "1"
 
     def open(self) -> bool:
         """打开串口并初始化配置"""
@@ -97,7 +99,8 @@ class ZSCanTransport:
             raise RuntimeError("串口未打开，无法发送数据")
 
         self.ser.write(frame)
-        print(f"[TX] ID=0x{can_id:04X} DATA={payload.hex(' ').upper()} FRAME={frame.hex(' ').upper()}")
+        if self.debug_tx:
+            print(f"[TX] ID=0x{can_id:04X} DATA={payload.hex(' ').upper()} FRAME={frame.hex(' ').upper()}")
         return bytes(frame)
 
     def send_raw_12byte_command(self, hex_command: str, is_extended: bool = False) -> bytes:
