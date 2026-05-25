@@ -1,0 +1,170 @@
+[
+  {
+    "step": 1,
+    "joint": "boom_swing",
+    "description": "大臂-回转(手动示教 - 初始位置)",
+    "ch1_mv": 0,
+    "ch2_mv": 0,
+    "ch3_mv": 3000,
+    "ramp_up_s": 0.2,
+    "ramp_down_s": 0.2,
+    "target_val": 0.2,
+    "is_init_step": true
+  },
+  {
+    "step": 2,
+    "joint": "arm_boom",
+    "description": "小臂-大臂(手动示教 - 初始位置)",
+    "ch1_mv": 0,
+    "ch2_mv": 0,
+    "ch3_mv": 3000,
+    "ramp_up_s": 0.2,
+    "ramp_down_s": 0.2,
+    "target_val": -0.7,
+    "is_init_step": true
+  },
+  {
+    "step": 3,
+    "joint": "bucket_arm",
+    "description": "铲斗-小臂(手动示教 - 初始位置)",
+    "ch1_mv": 0,
+    "ch2_mv": 0,
+    "ch3_mv": 3000,
+    "ramp_up_s": 0.2,
+    "ramp_down_s": 0.2,
+    "target_val": -93.0,
+    "is_init_step": true
+  },
+  {
+    "step": 4,
+    "joint": "boom_swing",
+    "description": "大臂-回转(手动示教)",
+    "ch1_mv": 0,
+    "ch2_mv": 0,
+    "ch3_mv": 3000,
+    "ramp_up_s": 0.2,
+    "ramp_down_s": 0.2,
+    "target_val": 50.4
+  },
+  {
+    "step": 5,
+    "joint": "bucket_arm",
+    "description": "铲斗-小臂(手动示教)",
+    "ch1_mv": 0,
+    "ch2_mv": 0,
+    "ch3_mv": 3000,
+    "ramp_up_s": 0.2,
+    "ramp_down_s": 0.2,
+    "target_val": -14.6
+  },
+  {
+    "step": 6,
+    "joint": "arm_boom",
+    "description": "小臂-大臂(手动示教)",
+    "ch1_mv": 0,
+    "ch2_mv": 0,
+    "ch3_mv": 3000,
+    "ramp_up_s": 0.2,
+    "ramp_down_s": 0.2,
+    "target_val": 27.6
+  },
+  {
+    "step": 7,
+    "joint": "boom_swing",
+    "description": "大臂-回转(手动示教)",
+    "ch1_mv": 0,
+    "ch2_mv": 0,
+    "ch3_mv": 3000,
+    "ramp_up_s": 0.2,
+    "ramp_down_s": 0.2,
+    "target_val": 41.4
+  },
+  {
+    "step": 8,
+    "joint": "bucket_arm",
+    "description": "铲斗-小臂(手动示教)",
+    "ch1_mv": 0,
+    "ch2_mv": 0,
+    "ch3_mv": 3000,
+    "ramp_up_s": 0.2,
+    "ramp_down_s": 0.2,
+    "target_val": 3.8
+  },
+  {
+    "step": 9,
+    "joint": "arm_boom",
+    "description": "小臂-大臂(手动示教)",
+    "ch1_mv": 0,
+    "ch2_mv": 0,
+    "ch3_mv": 3000,
+    "ramp_up_s": 0.2,
+    "ramp_down_s": 0.2,
+    "target_val": 70.1
+  },
+  {
+    "step": 10,
+    "joint": "boom_swing",
+    "description": "大臂-回转(手动示教)",
+    "ch1_mv": 0,
+    "ch2_mv": 0,
+    "ch3_mv": 3000,
+    "ramp_up_s": 0.2,
+    "ramp_down_s": 0.2,
+    "target_val": 20.3
+  },
+  {
+    "step": 11,
+    "joint": "swing_yaw",
+    "description": "回转动作",
+    "ch1_mv": 0,
+    "ch2_mv": 0,
+    "ch3_mv": 2000,
+    "ramp_up_s": 0.2,
+    "ramp_down_s": 0.2,
+    "duration_s": -3.0
+  },
+  {
+    "step": 12,
+    "joint": "boom_swing",
+    "description": "大臂-回转(手动示教)",
+    "ch1_mv": 0,
+    "ch2_mv": 0,
+    "ch3_mv": 2000,
+    "ramp_up_s": 0.2,
+    "ramp_down_s": 0.2,
+    "target_val": -0.0
+  },
+  {
+    "step": 13,
+    "joint": "arm_boom",
+    "description": "小臂-大臂(手动示教)",
+    "ch1_mv": 0,
+    "ch2_mv": 0,
+    "ch3_mv": 2000,
+    "ramp_up_s": 0.2,
+    "ramp_down_s": 0.2,
+    "target_val": 19.9
+  },
+  {
+    "step": 14,
+    "joint": "bucket_arm",
+    "description": "铲斗-小臂(手动示教)",
+    "ch1_mv": 0,
+    "ch2_mv": 0,
+    "ch3_mv": 2000,
+    "ramp_up_s": 0.2,
+    "ramp_down_s": 0.2,
+    "target_val": -54.7
+  },
+  {
+    "step": 15,
+    "joint": "swing_yaw",
+    "description": "回转动作",
+    "ch1_mv": 0,
+    "ch2_mv": 0,
+    "ch3_mv": 2000,
+    "ramp_up_s": 0.2,
+    "ramp_down_s": 0.2,
+    "duration_s": 3.0
+  }
+]

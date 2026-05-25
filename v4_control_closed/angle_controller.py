@@ -421,15 +421,39 @@ class AngleController:
                 # -------------------------
                 limits = self.joint_limits.get(joint_name)
                 if limits:
+                    min_limit = limits["min_angle"]
+                    max_limit = limits["max_angle"]
                     # 留出 1 度的缓冲以防抖动误触发
-                    if current_angle < limits["min_angle"] - 1.0:
-                        err_msg = f"[严重警告] {joint_name} 实时角度 {current_angle:.1f}° 已低于最小安全极限 {limits['min_angle']}°！强制急停并中止剧本！"
-                        self.trigger_fatal_stop(err_msg)
-                        break
-                    elif current_angle > limits["max_angle"] + 1.0:
-                        err_msg = f"[严重警告] {joint_name} 实时角度 {current_angle:.1f}° 已超出最大安全极限 {limits['max_angle']}°！强制急停并中止剧本！"
-                        self.trigger_fatal_stop(err_msg)
-                        break
+                    min_violation = current_angle < (min_limit - 1.0)
+                    max_violation = current_angle > (max_limit + 1.0)
+                    if min_violation:
+                        # 如果已经低于最小限位，但当前目标方向是“往回拉回安全范围”(diff>0)，允许继续。
+                        if diff > 0:
+                            self.log_msg(
+                                f"[警告] {joint_name} 实时角度 {current_angle:.1f}° 低于最小限位 {min_limit}°，但正在回到安全范围，继续执行。",
+                                also_print=True,
+                            )
+                        else:
+                            err_msg = (
+                                f"[严重警告] {joint_name} 实时角度 {current_angle:.1f}° 已低于最小安全极限 {min_limit}°，"
+                                "且动作将继续向危险方向运动！强制急停并中止剧本！"
+                            )
+                            self.trigger_fatal_stop(err_msg)
+                            break
+                    elif max_violation:
+                        # 如果已经高于最大限位，但当前目标方向是“往回拉回安全范围”(diff<0)，允许继续。
+                        if diff < 0:
+                            self.log_msg(
+                                f"[警告] {joint_name} 实时角度 {current_angle:.1f}° 高于最大限位 {max_limit}°，但正在回到安全范围，继续执行。",
+                                also_print=True,
+                            )
+                        else:
+                            err_msg = (
+                                f"[严重警告] {joint_name} 实时角度 {current_angle:.1f}° 已超出最大安全极限 {max_limit}°，"
+                                "且动作将继续向危险方向运动！强制急停并中止剧本！"
+                            )
+                            self.trigger_fatal_stop(err_msg)
+                            break
                 
                 # -------------------------
                 # 动态设置大臂的提前量和补偿
@@ -546,16 +570,8 @@ class AngleController:
                 if current_boost_mv > 0:
                     dynamic_ch3 = min(5000, dynamic_ch3 + current_boost_mv)
 
-                if joint_name == "boom_swing" and diff < 0: # 抬起动作
-                    # 如果记录的基础推力（如示教时）已经足够大（>3500），或者刚刚启动还在加速期（防止起步过猛），
-                    # 则削弱或取消额外的动态重力补偿。
-                    # 注意：如果触发了 current_boost_mv，说明已经被卡死了，此时即使在加速期内也可以给力。
-                    if base_ch3 < 3500 and (elapsed > ramp_up_s or current_boost_mv > 0):
-                        # 角度越大（大臂越低），需要克服重力的流量越大。
-                        # 以 0~45 度作为参考，最大补偿 +1500mV
-                        comp_factor = max(0.0, min(1.0, current_angle / 45.0))
-                        boost = int(comp_factor * 1500)
-                        dynamic_ch3 = min(5000, base_ch3 + boost)
+                if False and joint_name == "boom_swing" and diff < 0:
+                    pass
                         
                 self.controller.set_analog(int(dynamic_ch1 * scale), int(dynamic_ch2 * scale), int(dynamic_ch3 * scale))
                 

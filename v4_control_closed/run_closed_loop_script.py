@@ -421,8 +421,8 @@ if __name__ == "__main__":
                         help="从指定 step 开始执行 (包含)")
     parser.add_argument("--to-step", type=int, default=None,
                         help="执行到指定 step 结束 (包含)")
-    parser.add_argument("--step-interval", type=float, default=0.1,
-                        help="每步动作结束后的间隔时间(秒)，默认 0.1")
+    parser.add_argument("--step-interval", type=float, default=0.3,
+                        help="每步动作结束后的间隔时间(秒)，默认 0.3")
     parser.add_argument("--telemetry", type=str, default="",
                         help="保存遥测 CSV 文件(可选)。留空则不保存")
 
