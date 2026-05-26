@@ -6,53 +6,25 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import numpy as np
 
+import sys
+from kinematics import ExcavatorKinematics
+
 class TrajectoryAnimator3D:
     def __init__(self, json_path):
         self.json_path = json_path
-        
-        # 物理参数
-        self.offset_x = 0.25
-        self.offset_z = 0.40
-        self.L1 = 0.35
-        self.L2 = 0.60
-        self.boom_bend_angle_deg = 46.0
-        self.L_arm = 0.44
-        self.L_bucket = 0.26
-        
-        inner_angle_rad = math.radians(180.0 - self.boom_bend_angle_deg)
-        self.L_boom = math.sqrt(self.L1**2 + self.L2**2 - 2 * self.L1 * self.L2 * math.cos(inner_angle_rad))
-        sin_beta = (self.L1 * math.sin(inner_angle_rad)) / self.L_boom
-        self.beta_deg = math.degrees(math.asin(sin_beta))
-
-        # 最新标定的传感器偏置参数 (基于极限状态)
-        self.offset_boom = 40.9
-        self.offset_arm = 19.6
-        self.offset_bucket = -56.2
+        self.kin = ExcavatorKinematics()
 
     def fk_3d(self, boom_swing, arm_boom, bucket_arm, swing_yaw_deg):
         """计算各关节的 3D 坐标点"""
         # 1. 计算 2D 坐标 (X, Z)
-        sensor_boom_deg = boom_swing
-        sensor_arm_deg = boom_swing + arm_boom
-        sensor_bucket_deg = sensor_arm_deg + bucket_arm
-        
-        abs_boom_L2_deg = self.offset_boom - sensor_boom_deg
-        abs_arm_deg = self.offset_arm - sensor_arm_deg
-        abs_bucket_deg = self.offset_bucket - sensor_bucket_deg
-        
-        theta1 = math.radians(abs_boom_L2_deg + self.beta_deg)
-        theta2 = math.radians(abs_arm_deg)
-        theta3 = math.radians(abs_bucket_deg)
-        
-        x0, z0 = self.offset_x, self.offset_z
-        x1 = x0 + self.L_boom * math.cos(theta1)
-        z1 = z0 + self.L_boom * math.sin(theta1)
-        x2 = x1 + self.L_arm * math.cos(theta2)
-        z2 = z1 + self.L_arm * math.sin(theta2)
-        x3 = x2 + self.L_bucket * math.cos(theta3)
-        z3 = z2 + self.L_bucket * math.sin(theta3)
-        
-        pts_2d = [(x0, z0), (x1, z1), (x2, z2), (x3, z3)]
+        res = self.kin.forward_kinematics_v4(boom_swing, arm_boom, bucket_arm)
+        pts_2d = [
+            (self.kin.offset_x, self.kin.offset_z),
+            res['boom_bend'],
+            res['boom_tip'],
+            res['arm_tip'],
+            res['bucket_tip']
+        ]
         
         # 2. 绕 Z 轴旋转生成 3D 坐标
         # 设定：正角度为向左(逆时针)，负角度为向右(顺时针)

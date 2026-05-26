@@ -6,49 +6,13 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import numpy as np
 
+import sys
+from kinematics import ExcavatorKinematics
+
 class TrajectoryAnimator:
     def __init__(self, json_path):
         self.json_path = json_path
-        
-        # 物理参数
-        self.offset_x = 0.25
-        self.offset_z = 0.40
-        self.L1 = 0.35
-        self.L2 = 0.60
-        self.boom_bend_angle_deg = 46.0
-        self.L_arm = 0.44
-        self.L_bucket = 0.26
-        
-        inner_angle_rad = math.radians(180.0 - self.boom_bend_angle_deg)
-        self.L_boom = math.sqrt(self.L1**2 + self.L2**2 - 2 * self.L1 * self.L2 * math.cos(inner_angle_rad))
-        sin_beta = (self.L1 * math.sin(inner_angle_rad)) / self.L_boom
-        self.beta_deg = math.degrees(math.asin(sin_beta))
-
-    def fk(self, boom_swing, arm_boom, bucket_arm):
-        """计算各关节坐标点"""
-        # 极性转换与绝对角推导
-        sensor_boom_deg = boom_swing
-        sensor_arm_deg = boom_swing + arm_boom
-        sensor_bucket_deg = sensor_arm_deg + bucket_arm
-        
-        abs_boom_L2_deg = 40.9 - sensor_boom_deg
-        abs_arm_deg = 19.6 - sensor_arm_deg
-        abs_bucket_deg = -56.2 - sensor_bucket_deg
-        
-        theta1 = math.radians(abs_boom_L2_deg + self.beta_deg)
-        theta2 = math.radians(abs_arm_deg)
-        theta3 = math.radians(abs_bucket_deg)
-        
-        # 坐标系点
-        x0, z0 = self.offset_x, self.offset_z
-        x1 = x0 + self.L_boom * math.cos(theta1)
-        z1 = z0 + self.L_boom * math.sin(theta1)
-        x2 = x1 + self.L_arm * math.cos(theta2)
-        z2 = z1 + self.L_arm * math.sin(theta2)
-        x3 = x2 + self.L_bucket * math.cos(theta3)
-        z3 = z2 + self.L_bucket * math.sin(theta3)
-        
-        return [(x0, z0), (x1, z1), (x2, z2), (x3, z3)]
+        self.kin = ExcavatorKinematics()
 
     def generate_frames(self):
         with open(self.json_path, 'r') as f:
@@ -121,7 +85,14 @@ class TrajectoryAnimator:
             return line, trajectory_line
 
         def update(frame_state):
-            pts = self.fk(frame_state['boom_swing'], frame_state['arm_boom'], frame_state['bucket_arm'])
+            res = self.kin.forward_kinematics_v4(frame_state['boom_swing'], frame_state['arm_boom'], frame_state['bucket_arm'])
+            pts = [
+                (self.kin.offset_x, self.kin.offset_z),
+                res['boom_bend'],
+                res['boom_tip'],
+                res['arm_tip'],
+                res['bucket_tip']
+            ]
             x_vals = [p[0] for p in pts]
             z_vals = [p[1] for p in pts]
             

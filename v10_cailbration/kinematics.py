@@ -90,6 +90,22 @@ class ExcavatorKinematics:
         print(f"[Kinematics Init] 大臂等效长度 L_boom: {self.L_boom:.4f} m")
         print(f"[Kinematics Init] L2 传感器结构偏置角 beta: {self.beta_deg:.2f} 度")
 
+    def forward_kinematics_v4(self, boom_swing, arm_boom, bucket_arm):
+        """
+        基于 V4 控制器的相对角度计算正向运动学
+        在 V4 剧本中：
+        - boom_swing = 大臂绝对传感器读数
+        - arm_boom = 小臂绝对传感器读数 - 大臂绝对传感器读数
+        - bucket_arm = 铲斗绝对传感器读数 - 小臂绝对传感器读数
+        
+        此方法会自动将相对角累加为绝对角，并调用底层 forward_kinematics 进行解算。
+        """
+        sensor_boom_deg = boom_swing
+        sensor_arm_deg = sensor_boom_deg + arm_boom
+        sensor_bucket_deg = sensor_arm_deg + bucket_arm
+        
+        return self.forward_kinematics(sensor_boom_deg, sensor_arm_deg, sensor_bucket_deg)
+
     def forward_kinematics(self, sensor_boom_deg, sensor_arm_deg, sensor_bucket_deg):
         """
         根据传感器原始读数计算正向运动学
@@ -105,30 +121,43 @@ class ExcavatorKinematics:
         abs_arm_deg = self.offset_arm - sensor_arm_deg
         abs_bucket_deg = self.offset_bucket - sensor_bucket_deg
 
-        # 2. 计算大臂等效直线的绝对倾角
-        # 大臂是鹅颈向下的，等效直线(基座到小臂销轴)在 L2 的"上方"，因此角度加上 beta
-        theta_boom_line_deg = abs_boom_L2_deg + self.beta_deg
+        # 2. 计算大臂两段的绝对倾角
+        # L1与L2的夹角为 46度(向下弯折)。
+        # 当L2向上抬起时，L1比L2更加“竖直”，所以L1的仰角比L2大。
+        abs_boom_L1_deg = abs_boom_L2_deg + self.boom_bend_angle_deg
         
         # 转换为弧度
-        theta1 = math.radians(theta_boom_line_deg)
-        theta2 = math.radians(abs_arm_deg)
-        theta3 = math.radians(abs_bucket_deg)
-
-        # 3. 逐级坐标解算
+        theta_L1 = math.radians(abs_boom_L1_deg)
+        theta_L2 = math.radians(abs_boom_L2_deg)
         
-        # 节点 1: 大臂顶端 (连接小臂处)
-        x1 = self.offset_x + self.L_boom * math.cos(theta1)
-        z1 = self.offset_z + self.L_boom * math.sin(theta1)
+        # 对于小臂和铲斗，它们是连接在大臂“终点”(也就是L2的末端)
+        # 所以它们各自的绝对几何角就是它们自己的物理仰角
+        theta_arm = math.radians(abs_arm_deg)
+        theta_bucket = math.radians(abs_bucket_deg)
 
-        # 节点 2: 小臂顶端 (连接铲斗处)
-        x2 = x1 + self.L_arm * math.cos(theta2)
-        z2 = z1 + self.L_arm * math.sin(theta2)
+        # 3. 逐级坐标解算 (加入折弯点)
+        
+        # 节点 0: 大臂底座
+        x0, z0 = self.offset_x, self.offset_z
+        
+        # 节点 1: 大臂折弯点
+        xb = x0 + self.L1 * math.cos(theta_L1)
+        zb = z0 + self.L1 * math.sin(theta_L1)
+        
+        # 节点 2: 大臂顶端 (连接小臂处)
+        x1 = xb + self.L2 * math.cos(theta_L2)
+        z1 = zb + self.L2 * math.sin(theta_L2)
 
-        # 节点 3: 铲尖
-        x3 = x2 + self.L_bucket * math.cos(theta3)
-        z3 = z2 + self.L_bucket * math.sin(theta3)
+        # 节点 3: 小臂顶端 (连接铲斗处)
+        x2 = x1 + self.L_arm * math.cos(theta_arm)
+        z2 = z1 + self.L_arm * math.sin(theta_arm)
+
+        # 节点 4: 铲尖
+        x3 = x2 + self.L_bucket * math.cos(theta_bucket)
+        z3 = z2 + self.L_bucket * math.sin(theta_bucket)
 
         return {
+            "boom_bend": (xb, zb),
             "boom_tip": (x1, z1),
             "arm_tip": (x2, z2),
             "bucket_tip": (x3, z3)
