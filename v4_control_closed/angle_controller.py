@@ -29,7 +29,7 @@ class AngleController:
             "boom_swing": {"min_angle": -5.0, "max_angle": 55.0},   # 大臂与回转 (大臂)
             "arm_boom":   {"min_angle": -5.0, "max_angle": 95.0},   # 小臂与大臂 (小臂)
             "bucket_arm": {"min_angle": -95.0, "max_angle": 20.0},  # 铲斗与小臂 (铲斗)
-            "swing_yaw":  {"min_angle": -360.0, "max_angle": 360.0} # 回转偏航角 (不受限)
+            "swing_yaw":  {"min_angle": -180.0, "max_angle": 180.0} # 回转偏航角 (不受限)
         }
         
         # 内部状态：记录当前是否有闭环任务在运行
@@ -158,11 +158,15 @@ class AngleController:
             ramp_down_s: 柔性停止减速使能(秒，闭环中作为标识，开环中作为时间)
             is_init_step: 是否为初始归位步，若是则允许超时（6秒）后强行视为到达目标
         """
-        # 如果是回转，走时间开环控制逻辑
-        if joint_name == "swing_yaw":
-            # target_angle 在回转中代表秒数
-            self.move_swing_by_time(target_angle, ch1_mv, ch2_mv, ch3_mv, ramp_up_s, ramp_down_s)
-            return
+        # 如果是回转动作
+        if joint_name == "swing_yaw" or joint_name == "swing_time":
+            if joint_name == "swing_time":
+                # target_angle 在时间控制中代表秒数
+                self.move_swing_by_time(target_angle, ch1_mv, ch2_mv, ch3_mv, ramp_up_s, ramp_down_s)
+                return
+            else:
+                # 否则继续往下走基于 IMU 的闭环角度控制
+                pass
 
         # 1. 量程保护检查
         limits = self.joint_limits.get(joint_name)
@@ -469,10 +473,19 @@ class AngleController:
                 # 【防冲顶逻辑】如果当前差值的符号与初始差值的符号相反，说明已经越过了目标点
                 is_crossed = (self._initial_diff[joint_name] * diff) < 0
                 
-                if abs(diff) <= (tolerance + current_adv_comp) or is_crossed:
+                # 回转的惯性较大，但如果不留提前量反而会提前停机。
+                # 刚才日志显示: diff=-1.7 时就停了，因为 tolerance(2.0) + current_adv_comp(0.5) = 2.5
+                # 我们将回转的 tolerance 单独收紧，强制它靠得更近才停。
+                current_tolerance = tolerance
+                if joint_name == "swing_yaw":
+                    current_tolerance = 0.5 # 强制回转非常接近目标才允许触发停止，因为它的惯性会让它继续滑行
+                    current_adv_comp = 0.0  # 不需要额外补偿，直接用极小的容差
+                
+                if abs(diff) <= (current_tolerance + current_adv_comp) or is_crossed:
                     exit_confirm_count += 1
-                    # 连续3次(60ms)确认，或者在距离目标10度以内发生了越过，才真正停止（过滤传感器噪声突变）
-                    if exit_confirm_count >= 3 or (is_crossed and abs(diff) < 10.0):
+                    # 回转惯性大且需要精确停止，放宽确认条件
+                    confirm_threshold = 2 if joint_name == "swing_yaw" else 3
+                    if exit_confirm_count >= confirm_threshold or (is_crossed and abs(diff) < 10.0):
                         self.log_msg(f"[闭环控制完成] {joint_name} 抵达目标区域 (当前角度: {current_angle:.1f}° 目标: {target_angle}°)")
                         
                         # ========================================
@@ -493,12 +506,27 @@ class AngleController:
 
                             steps = max(1, int(ramp_down_s / 0.05))
                             dt = ramp_down_s / steps
-                            for i in range(1, steps + 1):
-                                tau = i / steps
-                                # 三次样条平滑下降
-                                s = current_scale * (1.0 - (3 * (tau ** 2) - 2 * (tau ** 3)))
-                                self.controller.set_analog(int(d_ch1 * s), int(d_ch2 * s), int(d_ch3 * s))
-                                time.sleep(dt)
+                            
+                            # 获取刹车起点的液压值，如果起点液压低于 1400mV（液压死区），则直接切断，不浪费时间
+                            start_ch3_actual = d_ch3 * current_scale
+                            if start_ch3_actual < 1300: # 稍微降低死区判定阈值，防止在 1350mV 左右的有效微动被腰斩
+                                self.log_msg(f"[柔性刹车] 当前液压 ({start_ch3_actual:.0f}mV) 已低于死区，跳过缓降，直接停机。")
+                            else:
+                                for i in range(1, steps + 1):
+                                    tau = i / steps
+                                    # 回转的最终刹车泄压采用线性，更顺滑
+                                    if joint_name == "swing_yaw":
+                                        s = current_scale * (1.0 - tau)
+                                    else:
+                                        s = current_scale * (1.0 - (3 * (tau ** 2) - 2 * (tau ** 3)))
+                                    
+                                    current_ch3_actual = int(d_ch3 * s)
+                                    # 一旦缓降到死区 1200 以下，就没有必要继续发送指令了，直接结束缓降
+                                    if current_ch3_actual < 1200:
+                                        break
+                                        
+                                    self.controller.set_analog(int(d_ch1 * s), int(d_ch2 * s), current_ch3_actual)
+                                    time.sleep(dt)
                                 
                         self._stop_joint_movement(joint_name)
                         try:
@@ -552,14 +580,26 @@ class AngleController:
                     elif joint_name == "bucket_arm":
                         ramp_down_threshold = 10.0
                         min_scale = 0.30
+                    elif joint_name == "swing_yaw":
+                        ramp_down_threshold = 20.0
+                        min_scale = 0.50 # 提高最低推力，防止回转提前卡住（死区在 1400mV 左右）
                     else:
                         ramp_down_threshold = 15.0
                         min_scale = 0.20
                     
                     if abs(diff) < ramp_down_threshold:
-                        tau = abs(diff) / ramp_down_threshold
-                        s = 3 * (tau ** 2) - 2 * (tau ** 3)
-                        scale = min_scale + (1.0 - min_scale) * s
+                        # 对于回转这种纯惯性+大阻力运动，采用线性或者更缓和的衰减，避免突然失去推力
+                        if joint_name == "swing_yaw":
+                            tau = abs(diff) / ramp_down_threshold
+                            # 使用简单的平方衰减而不是三次样条，保持中段推力
+                            # 考虑到 1400mV 是动作死区，且我们一般基础推力是 3000mV，
+                            # 所以最低比例 (min_scale) 必须大于等于 0.50 才能保证有 1500mV 以上的推力！
+                            min_scale = 0.50
+                            scale = min_scale + (1.0 - min_scale) * (tau ** 2)
+                        else:
+                            tau = abs(diff) / ramp_down_threshold
+                            s = 3 * (tau ** 2) - 2 * (tau ** 3)
+                            scale = min_scale + (1.0 - min_scale) * s
                         
                 # -------------------------
                 # 3. 动态流量补偿 (针对大臂抬起)

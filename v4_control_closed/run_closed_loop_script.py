@@ -12,10 +12,16 @@ import datetime
 # 引入底层库
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "v1_control_base")))
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "v3_sensor_read_wit", "WitStandardModbus_WT901C485-main", "Python", "Python-SDK-WT901C485_new")))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "v5_sensor_read_lidar")))
 
 from zs_excavator_controller import build_controller
 import device_model
 from angle_controller import AngleController
+
+import socket
+import struct
+import math
+from imu_direct_swing_estimator import DirectSwingAngleEstimator, LISTEN_PORT
 
 class ExecutionMonitorGUI:
     def __init__(self, runner):
@@ -178,10 +184,59 @@ class ClosedLoopScriptRunner:
             except Exception as e:
                 print(f"[{port}] 初始化失败: {e}")
                 
+        # 启动 IMU 监听线程
+        self.imu_thread = threading.Thread(target=self._imu_listener_loop, daemon=True)
+        self.imu_thread.start()
+                
         # 启动后台线程持续更新传感器数据给控制器
         threading.Thread(target=self._update_loop, daemon=True).start()
         print("[Runner] 等待 2 秒让传感器数据稳定...")
         time.sleep(2.0)
+
+    def _imu_listener_loop(self):
+        print("Starting UDP Lidar IMU listener...")
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        try:
+            sock.bind(('0.0.0.0', LISTEN_PORT))
+        except Exception as e:
+            print(f"Failed to bind UDP socket for IMU: {e}")
+            return
+
+        estimator = DirectSwingAngleEstimator()
+        
+        while self._running:
+            try:
+                sock.settimeout(0.5)
+                data, addr = sock.recvfrom(65536)
+            except socket.timeout:
+                continue
+            except Exception:
+                break
+                
+            if not data:
+                continue
+                
+            if data[0] == 0xfa and data[1] == 0x88 and len(data) >= 27:
+                imu_fmt = '<B h h h h h h b H Q'
+                try:
+                    imu_data = struct.unpack_from(imu_fmt, data, 8 + 1)
+                    accel_x = imu_data[1] * 4.0 / 0x10000
+                    accel_y = imu_data[2] * 4.0 / 0x10000
+                    accel_z = imu_data[3] * 4.0 / 0x10000
+                    gyro_x = imu_data[4] * 4000.0 / 0x10000 * math.pi / 180
+                    gyro_y = imu_data[5] * 4000.0 / 0x10000 * math.pi / 180
+                    gyro_z = imu_data[6] * 4000.0 / 0x10000 * math.pi / 180
+                    timestamp = imu_data[9]
+                    
+                    res = estimator.process_imu((accel_x, accel_y, accel_z), (gyro_x, gyro_y, gyro_z), timestamp)
+                    if res is not None:
+                        swing_deg, w_yaw = res
+                        self.sensor_data["回转"]["yaw"] = swing_deg
+                        self.sensor_ts["回转"] = time.time()
+                except struct.error:
+                    pass
+        sock.close()
 
     def _sensor_callback(self, port_name):
         id_to_name = {
@@ -195,7 +250,9 @@ class ClosedLoopScriptRunner:
                 data = dm.deviceData.get(addr, {})
                 if data and "AngX" in data:
                     self.sensor_data[name]["pitch"] = data.get("AngX", 0.0)
-                    self.sensor_data[name]["yaw"] = data.get("AngZ", 0.0)
+                    # 仅当不是回转传感器时才更新 yaw，因为回转 yaw 现由 IMU 专门接管提供
+                    if name != "回转":
+                        self.sensor_data[name]["yaw"] = data.get("AngZ", 0.0)
                     self.sensor_ts[name] = time.time()
                     dm.deviceData[addr].clear()
         return update
@@ -329,7 +386,12 @@ class ClosedLoopScriptRunner:
                         continue
                     
                     if joint == "swing_yaw":
-                        target_val = step.get('duration_s', step.get('target_val', 0.0))
+                        # 兼容老剧本：如果老剧本只提供了 duration_s，我们将其重定向为时间控制 swing_time
+                        if 'duration_s' in step and 'target_val' not in step:
+                            joint = "swing_time"
+                            target_val = step.get('duration_s', 0.0)
+                        else:
+                            target_val = step.get('target_val', 0.0)
                     else:
                         target_val = step.get('target_val', 0.0)
                         
