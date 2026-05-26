@@ -11,7 +11,7 @@ class TrajectoryAnimator:
         self.json_path = json_path
         
         # 物理参数
-        self.offset_x = -0.25
+        self.offset_x = 0.25
         self.offset_z = 0.40
         self.L1 = 0.35
         self.L2 = 0.60
@@ -110,7 +110,7 @@ class TrajectoryAnimator:
         line, = ax.plot([], [], 'o-', lw=4, markersize=8, label='Excavator Arm')
         trajectory_line, = ax.plot([], [], 'r-', lw=1.5, alpha=0.6, label='Bucket Tip Trajectory')
         
-        ax.legend(loc='upper right')
+        ax.legend(loc='upper left')
         
         trajectory_x = []
         trajectory_z = []

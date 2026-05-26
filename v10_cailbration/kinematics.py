@@ -8,7 +8,7 @@ class ExcavatorKinematics:
     def __init__(self):
         # 1. 物理参数配置 (单位: 米)
         # 坐标系偏移: 原点为回转中心地面投影 (X向前, Y向左, Z向上)
-        self.offset_x = -0.25
+        self.offset_x = 0.25
         self.offset_y = 0.0
         self.offset_z = 0.40  # 你提供的是 z:-0.4，但通常销轴在地面之上，所以我用 +0.4 作为销轴的高度
 

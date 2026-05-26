@@ -9,7 +9,7 @@ class WorkspaceAnalyzer:
     """
     def __init__(self):
         # 坐标系偏移 (相对于回转中心地面投影点)
-        self.offset_x = -0.25
+        self.offset_x = 0.25
         self.offset_y = 0.0
         self.offset_z = 0.40
         
@@ -120,7 +120,7 @@ class WorkspaceAnalyzer:
         plt.ylabel('Z (Upward) [m]')
         plt.axis('equal')
         plt.grid(True)
-        plt.legend()
+        plt.legend(loc='upper left')
         
         save_path = "/media/libo/libo_sn7100/ubuntu2204/shandong_ws/src/shandong/v10_cailbration/workspace_plot.png"
         plt.savefig(save_path)

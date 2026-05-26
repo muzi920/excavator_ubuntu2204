@@ -7,7 +7,7 @@ class ExcavatorIK:
     """
     def __init__(self):
         # 1. 坐标系与物理参数 (与 FK 保持完全一致)
-        self.offset_x = -0.25
+        self.offset_x = 0.25
         self.offset_z = 0.40
         self.L1 = 0.35
         self.L2 = 0.60

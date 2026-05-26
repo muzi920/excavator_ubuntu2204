@@ -10,8 +10,8 @@ class TrajectoryAnimator3D:
     def __init__(self, json_path):
         self.json_path = json_path
         
-        # 物理尺寸参数
-        self.offset_x = -0.25
+        # 物理参数
+        self.offset_x = 0.25
         self.offset_z = 0.40
         self.L1 = 0.35
         self.L2 = 0.60
@@ -121,8 +121,8 @@ class TrajectoryAnimator3D:
         fig.suptitle('Excavator 3D Trajectory (Dual View)', fontsize=16)
         
         # --- 左侧：俯视图 (Top View, X-Y 平面) ---
-        ax_top.set_xlim(-1.5, 1.5)
-        ax_top.set_ylim(-1.5, 1.5)
+        ax_top.set_xlim(-2.0, 2.0)
+        ax_top.set_ylim(-2.0, 2.0)
         ax_top.set_aspect('equal')
         ax_top.grid(True)
         ax_top.set_title('Top View (Swing X-Y)')
@@ -132,11 +132,11 @@ class TrajectoryAnimator3D:
         
         line_top, = ax_top.plot([], [], 'o-', lw=4, markersize=6, color='blue', label='Arm')
         traj_top, = ax_top.plot([], [], 'r-', lw=1.5, alpha=0.6, label='Bucket Tip')
-        ax_top.legend(loc='upper right')
+        ax_top.legend(loc='upper left')
         
         # --- 右侧：侧视图 (Side View, Distance-Z 平面) ---
-        ax_side.set_xlim(-0.5, 1.8)
-        ax_side.set_ylim(-1.0, 1.5)
+        ax_side.set_xlim(-0.5, 2.0)
+        ax_side.set_ylim(-1.0, 1.8)
         ax_side.set_aspect('equal')
         ax_side.grid(True)
         ax_side.set_title('Side View (Profile D-Z)')
@@ -147,7 +147,7 @@ class TrajectoryAnimator3D:
         
         line_side, = ax_side.plot([], [], 'o-', lw=4, markersize=6, color='green', label='Arm Profile')
         traj_side, = ax_side.plot([], [], 'r-', lw=1.5, alpha=0.6, label='Bucket Tip')
-        ax_side.legend(loc='upper right')
+        ax_side.legend(loc='upper left')
         
         trajectory_x, trajectory_y, trajectory_z, trajectory_d = [], [], [], []
 
