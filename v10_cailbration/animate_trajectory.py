@@ -31,9 +31,9 @@ class TrajectoryAnimator:
         sensor_arm_deg = boom_swing + arm_boom
         sensor_bucket_deg = sensor_arm_deg + bucket_arm
         
-        abs_boom_L2_deg = 40.0 - sensor_boom_deg
-        abs_arm_deg = -sensor_arm_deg
-        abs_bucket_deg = -sensor_bucket_deg
+        abs_boom_L2_deg = 40.9 - sensor_boom_deg
+        abs_arm_deg = 19.6 - sensor_arm_deg
+        abs_bucket_deg = -56.2 - sensor_bucket_deg
         
         theta1 = math.radians(abs_boom_L2_deg + self.beta_deg)
         theta2 = math.radians(abs_arm_deg)

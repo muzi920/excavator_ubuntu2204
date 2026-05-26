@@ -3,6 +3,11 @@ from tkinter import ttk, messagebox
 import threading
 import sys
 import os
+import json
+
+# 将 v1_control_base 目录添加到 Python 路径，用于导入 zs_excavator_controller
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "v1_control_base")))
+from zs_excavator_controller import ExcavatorController
 
 # 引用 v2 下的 ActionScheduler
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))

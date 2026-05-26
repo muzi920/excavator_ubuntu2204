@@ -61,9 +61,9 @@ class WorkspaceAnalyzer:
         
         # 2. 转换为标准几何系 (向上为正)
         # 加上大臂传感器的物理标定偏置：读数为0时，L2实际几何角度为 +40度
-        abs_boom_L2_deg = 40.0 - sensor_boom_deg
-        abs_arm_deg = -sensor_arm_deg  # 暂未标定偏置
-        abs_bucket_deg = -sensor_bucket_deg  # 暂未标定偏置
+        abs_boom_L2_deg = 40.9 - sensor_boom_deg
+        abs_arm_deg = 19.6 - sensor_arm_deg
+        abs_bucket_deg = -56.2 - sensor_bucket_deg  # 暂未标定偏置
 
         # 3. 结合物理偏置计算实际连杆的绝对角度
         # 大臂等效直线的角度 = 几何角L2 + beta (因为连线在L2上方)

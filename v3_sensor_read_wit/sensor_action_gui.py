@@ -1,13 +1,28 @@
 import tkinter as tk
-import time
-import threading
 from tkinter import ttk, messagebox
+import threading
+import time
+import json
+import math
 import sys
 import os
 
-# 添加 v2 和 v3 的依赖路径
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "v2")))
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "v3", "WitStandardModbus_WT901C485-main", "Python", "Python-SDK-WT901C485_new")))
+# 将 v1_control_base 目录添加到 Python 路径，用于导入 zs_excavator_controller
+v1_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'v1_control_base'))
+if v1_path not in sys.path:
+    sys.path.insert(0, v1_path)
+from zs_excavator_controller import ExcavatorController
+
+# 引入 Wit 传感器SDK的路径（假设它在你的项目中）
+wit_sdk_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "WitStandardModbus_WT901C485-main", "Python", "Python-SDK-WT901C485_new"))
+if wit_sdk_path not in sys.path:
+    sys.path.append(wit_sdk_path)
+
+# 将 v2_control_time_track 目录添加到 Python 的模块搜索路径中
+# 以便能够正确导入 action_scheduler
+v2_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'v2_control_time_track'))
+if v2_path not in sys.path:
+    sys.path.insert(0, v2_path)
 
 from action_scheduler import ActionScheduler
 import device_model
@@ -80,33 +95,46 @@ class ExcavatorSensorGUI:
             messagebox.showinfo("连接成功", "已成功连接到挖掘机控制板！")
 
     def _init_sensors(self):
-        addrLis = [0x50]
+        addrLis = [0x50, 0x51, 0x52, 0x53]
         baud = 230400
-        configs = [
-            ("大臂", "COM11"),
-            ("小臂", "COM8"),
-            ("铲斗", "COM7"),
-            ("回转", "COM12"),
+        
+        # 使用 Ubuntu 下 udev 规则绑定的软链接名称
+        ports = [
+            "/dev/ttyUSB_Sensor1",
+            "/dev/ttyUSB_Sensor2",
+            "/dev/ttyUSB_Sensor3",
+            "/dev/ttyUSB_Sensor4",
         ]
         
-        for name, port in configs:
+        for port in ports:
             try:
-                device = device_model.DeviceModel(name, port, baud, addrLis, self._create_sensor_callback(name))
+                # 注意这里传入 port，因为我们要通过 id_to_name 在回调里判断具体是哪个传感器
+                device = device_model.DeviceModel(port, port, baud, addrLis, self._create_sensor_callback(port))
                 device.openDevice()
                 device.startLoopRead()
                 self.devices.append(device)
-                print(f"[{name}] {port} 传感器初始化成功")
+                print(f"[{port}] 传感器初始化成功")
             except Exception as e:
-                print(f"[{name}] {port} 传感器初始化失败: {e}")
+                print(f"[{port}] 传感器初始化失败: {e}")
 
-    def _create_sensor_callback(self, sensor_name):
+    def _create_sensor_callback(self, port_name):
+        id_to_name = {
+            0x50: "铲斗",
+            0x51: "小臂",
+            0x52: "大臂",
+            0x53: "回转"
+        }
+        
         def updateData(DeviceModel):
-            addr = DeviceModel.addrLis[0]
-            data = DeviceModel.deviceData.get(addr, {})
-            if data:
-                self.sensor_data[sensor_name]["roll"] = data.get("AngX", 0.0)
-                self.sensor_data[sensor_name]["pitch"] = data.get("AngY", 0.0)
-                self.sensor_data[sensor_name]["yaw"] = data.get("AngZ", 0.0)
+            for addr, name in id_to_name.items():
+                data = DeviceModel.deviceData.get(addr, {})
+                if data and "AngX" in data:
+                    self.sensor_data[name]["roll"] = data.get("AngX", 0.0)
+                    self.sensor_data[name]["pitch"] = data.get("AngY", 0.0)
+                    self.sensor_data[name]["yaw"] = data.get("AngZ", 0.0)
+                    
+                    # 取出数据后清除缓存
+                    DeviceModel.deviceData[addr].clear()
         return updateData
 
     def _build_ui(self):

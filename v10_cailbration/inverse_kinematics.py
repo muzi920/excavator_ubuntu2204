@@ -82,15 +82,15 @@ class ExcavatorIK:
         # ---------------------------------------------------------
         # 根据 FK 的映射公式:
         # theta1_deg = abs_boom_L2_deg + beta_deg
-        # abs_boom_L2_deg = 40.0 - sensor_boom_deg
+        # abs_boom_L2_deg = 40.9 - sensor_boom_deg
         abs_boom_L2_deg = theta1_deg - self.beta_deg
-        sensor_boom_deg = 40.0 - abs_boom_L2_deg
+        sensor_boom_deg = 40.9 - abs_boom_L2_deg
         
-        # abs_arm_deg = -sensor_arm_deg
-        sensor_arm_deg = -theta2_deg
+        # sensor_boom_deg = 40.9 - abs_boom_L2_deg
+        sensor_arm_deg = 19.6 - theta2_deg
         
-        # abs_bucket_deg = -sensor_bucket_deg
-        sensor_bucket_deg = -theta3_deg
+        # abs_bucket_deg = sensor_bucket_deg - 56.2
+        sensor_bucket_deg = theta3_deg + 56.2
 
         # V4 相对角 (JSON 剧本中下发的参数)
         boom_swing = sensor_boom_deg
