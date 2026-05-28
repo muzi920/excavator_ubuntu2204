@@ -236,7 +236,10 @@ map
 | `/excavator/joint_states` | `sensor_msgs/JointState` | 20Hz | 挖掘机本体四个关节的实时绝对物理夹角，单位为 **弧度(Radians)**。<br>数组 `position` 的排列顺序为：<br>`[0] boom_joint`: 大臂与回转夹角<br>`[1] arm_joint`: 小臂与大臂夹角<br>`[2] bucket_joint`: 铲斗与小臂夹角<br>`[3] swing_joint`: 绝对偏航角（由雷达IMU解算） |
 
 **如何录制数据（一键 Bag）：**
-可通过运行 `launch/launch_gui.py` 打开简易面板，一键启动 `ros2 bag record` 录制以上所有话题，录制完毕后的包默认保存在 `src/bag/` 目录下。
+可通过运行 `python3 launch/v11_launch_gui.py` 打开简易面板。
+该面板提供两个核心功能：
+1. **启动 V11 传感器 GUI**：一键执行 `python3 src/shandong/v11_multimodal_dataset_collection/ros2_multimodal_gui.py` 启动传感器和话题发布。
+2. **开始录制 Rosbag**：一键启动 `ros2 bag record` 录制以上 5 个 V11 纯净话题，录制完毕后的包默认保存在 `src/bag/` 目录下。
 
 ---
 

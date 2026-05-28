@@ -109,8 +109,8 @@ class Ros2LaunchGUI:
                 # "/camera2/image_raw",
                 # "/lidar/points",
                 # "/excavator/joint_states",
-                # "/tf",
-                # "/tf_static"
+                "/tf",
+                "/tf_static"
             ]
             
             # 将录制的包保存在 src/bag/ 目录下

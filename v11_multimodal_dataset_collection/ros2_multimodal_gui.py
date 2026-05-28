@@ -10,11 +10,14 @@ import struct
 import socket
 
 # 引入底层库
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "v1_control_base")))
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "v3_sensor_read_wit", "WitStandardModbus_WT901C485-main", "Python", "Python-SDK-WT901C485_new")))
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "v5_sensor_read_lidar")))
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "v4_control_closed")))
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "v10_cailbration")))
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+
+sys.path.append(os.path.join(parent_dir, "v1_control_base"))
+sys.path.append(os.path.join(parent_dir, "v3_sensor_read_wit", "WitStandardModbus_WT901C485-main", "Python", "Python-SDK-WT901C485_new"))
+sys.path.append(os.path.join(parent_dir, "v5_sensor_read_lidar"))
+sys.path.append(os.path.join(parent_dir, "v4_control_closed"))
+sys.path.append(os.path.join(parent_dir, "v10_cailbration_arm"))
 
 import matplotlib
 matplotlib.use("TkAgg")
