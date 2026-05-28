@@ -3,8 +3,9 @@ import os
 import copy
 
 def generate_dig_scripts():
-    template_path = os.path.join(os.path.dirname(__file__), "auto_dig_template.json")
-    output_dir = os.path.join(os.path.dirname(__file__), "auto_dig_scripts")
+    json_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "json"))
+    template_path = os.path.join(json_dir, "auto_dig_template.json")
+    output_dir = os.path.join(json_dir, "auto_dig_scripts")
     
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)

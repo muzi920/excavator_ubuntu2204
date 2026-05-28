@@ -23,8 +23,10 @@ def generate(
     dump_return_delta_s: float = 0.1,
 ):
     base_dir = os.path.dirname(__file__)
-    template_path = template_json if os.path.isabs(template_json) else os.path.join(base_dir, template_json)
-    output_path = output_json if os.path.isabs(output_json) else os.path.join(base_dir, output_json)
+    json_dir = os.path.abspath(os.path.join(base_dir, "..", "json"))
+    os.makedirs(json_dir, exist_ok=True)
+    template_path = template_json if os.path.isabs(template_json) else os.path.join(json_dir, template_json)
+    output_path = output_json if os.path.isabs(output_json) else os.path.join(json_dir, output_json)
 
     template = _load(template_path)
     init_steps = [s for s in template if s.get("is_init_step") is True]

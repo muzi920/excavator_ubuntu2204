@@ -52,8 +52,12 @@ def main():
     args = parser.parse_args()
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    template_path = os.path.join(script_dir, args.json) if not os.path.isabs(args.json) else args.json
-    output_path = os.path.join(script_dir, args.out) if not os.path.isabs(args.out) else args.out
+    json_dir = os.path.abspath(os.path.join(script_dir, "..", "json"))
+    os.makedirs(json_dir, exist_ok=True)
+    
+    # 默认从 json_dir 读取和保存
+    template_path = os.path.join(json_dir, args.json) if not os.path.isabs(args.json) else args.json
+    output_path = os.path.join(json_dir, args.out) if not os.path.isabs(args.out) else args.out
 
     if not os.path.exists(template_path):
         print(f"错误: 找不到模板文件 {template_path}")

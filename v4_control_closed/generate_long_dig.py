@@ -4,8 +4,10 @@ import copy
 import numpy as np
 
 def generate_long_script():
-    template_path = os.path.join(os.path.dirname(__file__), "auto_dig_template.json")
-    output_path = os.path.join(os.path.dirname(__file__), "long_auto_dig.json")
+    json_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "json"))
+    os.makedirs(json_dir, exist_ok=True)
+    template_path = os.path.join(json_dir, "auto_dig_template.json")
+    output_path = os.path.join(json_dir, "long_auto_dig.json")
     
     with open(template_path, 'r', encoding='utf-8') as f:
         template = json.load(f)

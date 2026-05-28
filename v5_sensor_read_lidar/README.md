@@ -1,19 +1,26 @@
-# V5 雷达读取与 TF 标定 (Sensor Read LiDAR)
+## V5 激光雷达与 IMU 传感器读取
+本目录包含与 Pacecat M300 激光雷达相关的读取、解析与校准脚本。重点在于从雷达的 UDP 数据包中直接提取点云数据和高精度 IMU 数据，并用于挖掘机的回转角度闭环控制。
 
-本目录主要包含 M300 雷达的数据读取、可视化以及与 ROS 2 TF 坐标系标定相关的工具与说明。
+### 核心脚本说明
 
-## 主要工作与功能
+#### 1. IMU 偏航角直接解算 (`imu_direct_swing_estimator.py`)
+这是连接 V4 闭环控制与雷达的核心脚本。它不依赖 ROS2，直接通过 UDP 端口监听雷达发送的 `0xfa 0x88` IMU 报文。
+- **三维重力空间投影**：自动利用加速度计获取当前雷达安装的绝对垂直轴向量，将陀螺仪的角速度投影到世界坐标系的绝对 Z 轴上。即使雷达安装存在明显倾斜，也能算出绝对精准的回转角速度。
+- **开机动态零偏校准**：程序启动前 3 秒强制进行静止采样，计算陀螺仪零偏（Bias），消除温漂。
+- **极微动作捕捉**：采用梯形积分结合 0.002 rad/s 的死区滤波，静止时不漂移，微小动作不漏算。
+- **日志记录**：自动将带时间戳的 `Angle` 和 `Yaw_Rate` 以 0.2s 的间隔保存到 `logs/` 目录下（CSV格式）。
 
-1. **雷达驱动与数据读取**
-   - 包含了 `m300-main` 驱动源码，用于与 M300 雷达进行底层通信。
-   - 提供 `lidar_direct_reader.py` 和 `lidar_viewer.py` 等脚本进行点云数据的读取与独立可视化测试。
+#### 2. Lidar 基础读取测试 (`lidar_direct_reader.py`)
+- 直接解析雷达 UDP 数据包的基础脚本。
+- 用于测试点云包和 IMU 包的接收状态，展示报文解包格式和 C++ SDK 的转换逻辑。
 
-2. **动态 TF 标定工具 (`tf_calibration_gui.py`)**
-   - 为了解决雷达倒装及实际安装位置的偏差，开发了基于 Tkinter 的可视化标定 GUI。
-   - 可以动态微调 X, Y, Z 平移以及 Yaw, Pitch, Roll 旋转（界面显示度数，底层转换弧度）。
-   - **核心修复**：采用纯静态 TF (`StaticTransformBroadcaster`) 每次更新时重新发布覆盖的方式，彻底解决了 Rviz2 中由于雷达硬件时间戳与系统当前时间不同步导致的 `timestamp dropping`（时间戳过老）报错问题。
-   - 提供一键导出功能，将调整好的参数保存至 `tf_calibration_record.txt`。
+#### 3. ROS2 相关可视化工具
+以下脚本通常配合 M300 的 ROS2 驱动使用：
+- **`lidar_viewer.py`**: 基于 Open3D 的点云实时 3D 可视化工具。
+- **`tf_calibration_gui.py`**: Tkinter 界面，用于手动微调激光雷达相对于挖掘机坐标系的 TF 静态变换参数 (x, y, z, roll, pitch, yaw)，并支持保存至 `tf_calibration_record.txt`。
+- **`pointcloud_transformer.py`**: ROS2 节点，读取校准记录并将雷达原始的 `/pacecat_pointcloud` 实时转换投影到 `base_link` 坐标系下，发布为 `/transformed_pointcloud`。
+- **`swing_angle_estimator.py`**: (旧版/参考) 基于 ROS2 `Imu` 消息的回转角度积分估算器。
 
-3. **标定记录与指南**
-   - `tf_calibration_record.txt`：记录了历次标定的历史参数，最新的记录可以直接复制到 Launch 文件中作为雷达的静态 TF 参数。
-   - `sensor_calibration_guide.md`：详细的传感器标定与 TF 树配置指南文档。
+### 运行环境
+- UDP 端口监听：雷达默认通过 `192.168.158.98:6543` 交互，脚本监听 `6668` 端口。
+- 确保运行脚本的主机与雷达处于同一局域网网段。

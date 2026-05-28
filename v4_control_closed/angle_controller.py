@@ -46,6 +46,11 @@ class AngleController:
 
         self.fatal_stop = False
         self.fatal_reason = ""
+        self._last_outputs = (0, 0, 0)
+        
+    def get_current_outputs(self):
+        """返回当前真实下发给控制器的三通道模拟量，供数据集记录使用"""
+        return self._last_outputs
 
     def trigger_fatal_stop(self, reason: str):
         self.fatal_stop = True
@@ -120,6 +125,7 @@ class AngleController:
                 return False
             try:
                 self.controller.set_analog(0, 0, 0)
+                self._last_outputs = (0, 0, 0)
             except Exception:
                 pass
             time.sleep(0.05)
@@ -526,6 +532,7 @@ class AngleController:
                                         break
                                         
                                     self.controller.set_analog(int(d_ch1 * s), int(d_ch2 * s), current_ch3_actual)
+                                    self._last_outputs = (int(d_ch1 * s), int(d_ch2 * s), current_ch3_actual)
                                     time.sleep(dt)
                                 
                         self._stop_joint_movement(joint_name)
@@ -614,6 +621,7 @@ class AngleController:
                     pass
                         
                 self.controller.set_analog(int(dynamic_ch1 * scale), int(dynamic_ch2 * scale), int(dynamic_ch3 * scale))
+                self._last_outputs = (int(dynamic_ch1 * scale), int(dynamic_ch2 * scale), int(dynamic_ch3 * scale))
                 
                 current_scale = scale # 保存给退出时的缓降使用
                 

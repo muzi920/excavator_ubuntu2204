@@ -1,6 +1,6 @@
 # 挖掘机控制与多传感器采集系统
 
-本仓库用于模型挖掘机的底层控制、时间脚本控制、倾角传感器采集、闭环角度控制、M300 雷达接入、多路摄像头读取与 ROS 2 坐标系标定。
+本仓库用于模型挖掘机的底层控制、时间脚本控制、倾角传感器采集、闭环角度控制、M300 雷达接入、多路摄像头读取、ROS 2 坐标系标定与端到端多模态数据集采集。
 
 当前仓库已经从早期的 `v1`、`v2`、`v3` 顺序试验目录，整理为按功能命名的目录结构，便于长期维护和现场调试。
 
@@ -8,22 +8,41 @@
 - `v1_control_base`：中盛 CAN 控制板底层控制与点动 GUI
 - `v2_control_time_track`：基于时间的动作调度与剧本控制
 - `v3_sensor_read_wit`：WIT 倾角传感器读取、串口识别与 ROS 2 发布
-- `v4_control_closed`：基于倾角反馈的闭环角度控制
+- `v4_control_closed`：基于倾角反馈的闭环角度控制与 JSON 剧本生成
 - `v5_sensor_read_lidar`：M300 雷达读取、点云与 IMU 处理、TF 标定
 - `v6_sensor_read_camera`：USB/RTSP 摄像头读取与 ROS 2 图像发布
 - `v7_lerobot_dataset`：基于 ROS 2 的 LeRobot 数据集采集测试
 - `v8_direct_data_collection`：纯 Python 底层无延迟直连 LeRobot 采集架构
+- `v9_nav`：Navigation2 路径规划与导航
+- `v10_cailbration`：正运动学、3D 可视化、雷达 IMU 回转偏航角融合
+- `v11_multimodal_dataset_collection`：**最新主推版本**，提供端到端数据采集、剧本一键复现、实时 3D 轨迹留档。
 - `launch`：多传感器启动脚本与静态 TF 统一管理
+- `json`：所有自动化控制 JSON 剧本的统一存放目录。
+- `data`：所有多模态数据集（视觉、点云、状态、指令、动图）的统一归档目录。
 
 ## 推荐调试流程
 1. 先在 `v1_control_base` 确认底盘、大臂、小臂、铲斗、回转的底层 CAN 控制正常。
 2. 在 `v3_sensor_read_wit` 中完成倾角传感器串口识别、角度读取与极限工况测量。
-3. 根据测得的关节活动范围，在 `v4_control_closed` 中进行闭环角度控制调试。
+3. 根据测得的关节活动范围，在 `v4_control_closed` 中进行闭环角度控制调试，并录制/生成自动挖掘的 JSON 剧本。
 4. 在 `v5_sensor_read_lidar` 中完成 M300 雷达接入、倒装修正与 `map -> base_link` 标定。
 5. 在 `v6_sensor_read_camera` 中接入海康或普通网络摄像头，并在 `launch/sensors_tf.launch.py` 中维护相机相对于 `base_link` 的静态外参。
-6. 最后通过 `launch` 中的脚本统一启动感知链路。
+6. 在 `v11_multimodal_dataset_collection` 中，使用综合 GUI 执行自动化闭环剧本，同时记录高频对齐的多模态数据集。
+7. 最后通过 `launch` 中的脚本统一启动感知链路（如需 ROS 2 支持）。
 
-## 当前目录结构
+## 核心目录详细说明
+
+### `v11_multimodal_dataset_collection`：端到端多模态数据集采集 (最新核心)
+这是整个工程的集大成者，融合了底层控制、闭环寻的、雷达直连、视频流拉取和运动学可视化。
+- 提供一键启动的多模态数据录制（支持遥控采集与剧本自动复现采集）。
+- 严格基于时间戳（`time.time()`）对齐所有模态数据。
+- 剧本复现时，支持实时双视图 3D 可视化，并在执行完毕后自动生成 `.gif` 动图归档至数据集中。
+
+### `v10_cailbration`：正运动学与 3D 可视化
+- `kinematics.py`：挖掘机正向运动学核心模型，计算大臂、小臂、铲斗 2D 坐标。
+- `animate_trajectory_3d.py`：基于正运动学模型和雷达回转数据，将 JSON 剧本或实时运行轨迹渲染成直观的 3D 动图。
+
+### `v9_nav`：Navigation2 路径规划与导航
+该目录用于接入 ROS 2 Nav2 导航栈，实现挖掘机底盘的自主移动与路径规划。
 
 ### `v1_control_base`：底层控制与实时交互
 该目录直接面向中盛 ZS-USB-CAN 转接板和继电器/模拟量控制模块。
@@ -88,7 +107,7 @@ python3 v3_sensor_read_wit/ros2_readRad_pub.py
 ```
 
 ### `v4_control_closed`：闭环角度控制
-该目录将底层控制与倾角反馈结合，实现机械臂关节的自动寻的。
+该目录将底层控制与倾角反馈结合，实现机械臂关节的自动寻的，并负责控制剧本的生成与解析。
 
 - `angle_controller.py`
   - 闭环控制核心。
@@ -97,6 +116,8 @@ python3 v3_sensor_read_wit/ros2_readRad_pub.py
 - `closed_loop_gui.py`
   - 闭环控制调试界面。
   - 支持输入目标角度并观察各关节实时状态。
+- `generate_*.py`
+  - 各类自动化剧本生成工具（如 30 轮扇形扫掠挖掘），生成的 `.json` 文件将统一保存在根目录的 `json/` 文件夹下。
 
 当前控制逻辑中的关键经验：
 - 铲斗、小臂、大臂的相对角度控制已适配传感器安装方向反向问题。
@@ -109,12 +130,14 @@ python3 v4_control_closed/closed_loop_gui.py
 ```
 
 ### `v5_sensor_read_lidar`：M300 雷达接入与 TF 标定
-该目录用于 M300 雷达驱动测试、点云读取与坐标系标定。
+该目录用于 M300 雷达驱动测试、点云读取与坐标系标定。完全抛弃 ROS2 机制，通过 Python直接监听雷达 UDP 端口（6543/6668）。
 
 - `m300-main`
   - 官方驱动和 SDK 源码。
 - `lidar_direct_reader.py`、`lidar_viewer.py`
   - 点云读取与独立测试脚本。
+- `imu_direct_swing_estimator.py`
+  - 解析高频 IMU 报文，结合静止加速度计进行 3D 空间重力投影，完美解决雷达非水平安装导致的回转误差。
 - `tf_calibration_gui.py`
   - 雷达 TF 可视化标定工具。
   - 用于动态调整 `map -> base_link` 的平移和姿态参数。
@@ -198,6 +221,12 @@ map
     └── hikvision_cam_frame
 ```
 
+## 数据存储规范
+
+为了防止数据混乱，当前系统实行严格的文件归档规范：
+- **剧本文件**：无论是手动示教录制的剧本，还是代码生成的批量测试剧本，统统保存在 `src/shandong/json/` 目录下。
+- **数据集**：所有的多模态采集产物均保存在 `src/shandong/data/` 目录下。每次启动采集都会以 `v11_YYYYMMDD_HHMMSS/` 命名新建一个子目录。
+
 ## 与现场部署相关的补充说明
 
 ### 1. 串口稳定绑定
@@ -222,26 +251,27 @@ map
 
 ## 快速启动参考
 
-### 仅测试底层控制
+### 启动端到端采集与闭环测试 (主推)
+```bash
+python3 v11_multimodal_dataset_collection/multimodal_gui.py
+```
 
+### 仅测试底层点动控制
 ```bash
 python3 v1_control_base/zs_excavator_gui.py
 ```
 
-### 仅测试倾角传感器
-
+### 仅测试倾角传感器读取
 ```bash
 python3 v3_sensor_read_wit/readRad_ubuntu.py
 ```
 
 ### 启动闭环控制界面
-
 ```bash
 python3 v4_control_closed/closed_loop_gui.py
 ```
 
 ### 启动雷达与多传感器 TF
-
 ```bash
 ros2 launch shandong launch/sensors_tf.launch.py
 ```
@@ -251,16 +281,15 @@ ros2 launch shandong launch/sensors_tf.launch.py
 常用 Python 依赖：
 
 ```bash
-pip install pyserial opencv-python numpy
+pip install pyserial opencv-python numpy matplotlib
 ```
 
-如需 ROS 2 图像桥接、TF、Rviz2 联调，还需要确保本机已安装对应的 ROS 2 发行版及常用包。
-
 可能会用到的系统或 Python 组件包括：
-- `pyserial`
-- `opencv-python`
-- `numpy`
-- `tkinter`
+- `pyserial` (用于传感器串口和 CAN 通信)
+- `opencv-python` (用于拉取 RTSP 流和保存图像)
+- `numpy` (用于雷达点云矩阵运算与保存)
+- `matplotlib` (用于 3D 实时可视化与生成 GIF)
+- `tkinter` (用于 GUI 界面)
 - `rclpy`
 - `tf2_ros`
 - `sensor_msgs`

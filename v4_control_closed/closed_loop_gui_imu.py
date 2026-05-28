@@ -74,6 +74,10 @@ class V4ClosedLoopGUI:
             "swing_yaw": 0.0
         }
 
+        # 设置 JSON 统一保存目录
+        self.json_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "json"))
+        os.makedirs(self.json_dir, exist_ok=True)
+
         # 启动雷达 IMU 监听线程
         self.imu_running = True
         self.imu_thread = threading.Thread(target=self._imu_listener_loop, daemon=True)
@@ -250,7 +254,7 @@ class V4ClosedLoopGUI:
             
         file_path = filedialog.asksaveasfilename(
             defaultextension=".json",
-            initialdir=os.path.dirname(__file__),
+            initialdir=self.json_dir,
             title="保存闭环剧本",
             filetypes=[("JSON files", "*.json")]
         )

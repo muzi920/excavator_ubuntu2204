@@ -66,6 +66,10 @@ class V4ClosedLoopGUI:
             "swing_yaw": 0.0
         }
 
+        # 设置 JSON 统一保存目录
+        self.json_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "json"))
+        os.makedirs(self.json_dir, exist_ok=True)
+
         # 初始化传感器
         self._init_sensors()
         self._build_ui()
@@ -189,7 +193,7 @@ class V4ClosedLoopGUI:
             
         file_path = filedialog.asksaveasfilename(
             defaultextension=".json",
-            initialdir=os.path.dirname(__file__),
+            initialdir=self.json_dir,
             title="保存闭环剧本",
             filetypes=[("JSON files", "*.json")]
         )

@@ -491,7 +491,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
     loop_count = max(1, args.times)
 
-    script_path = args.json if os.path.isabs(args.json) else os.path.join(os.path.dirname(__file__), args.json)
+    json_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "json"))
+    script_path = args.json if os.path.isabs(args.json) else os.path.join(json_dir, args.json)
     
     runner = ClosedLoopScriptRunner(port=args.port)
     try:
