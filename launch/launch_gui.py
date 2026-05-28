@@ -70,8 +70,10 @@ class Ros2LaunchGUI:
         if self.launch_process:
             print("[INFO] 正在停止 ros2 launch...")
             try:
-                # 杀死整个进程组，确保所有子节点被关闭
+                # 必须连续发送两次 SIGINT 或者直接发送 SIGTERM，才能打破 ros2 launch 的 respawn/清理机制
                 os.killpg(os.getpgid(self.launch_process.pid), signal.SIGINT)
+                time.sleep(0.5)
+                os.killpg(os.getpgid(self.launch_process.pid), signal.SIGTERM)
                 self.launch_process.wait(timeout=3)
             except Exception as e:
                 print(f"[ERROR] 停止 Launch 异常: {e}")
@@ -102,8 +104,13 @@ class Ros2LaunchGUI:
                 "/network_cam2/image_raw",
                 "/pointcloud",
                 "/pointcloud_base_link",
-                "/tf",
-                "/tf_static"
+                # "/camera_hik/image_raw",
+                # "/camera1/image_raw",
+                # "/camera2/image_raw",
+                # "/lidar/points",
+                # "/excavator/joint_states",
+                # "/tf",
+                # "/tf_static"
             ]
             
             # 将录制的包保存在 src/bag/ 目录下

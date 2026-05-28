@@ -29,21 +29,222 @@ import device_model
 from angle_controller import AngleController
 from imu_direct_swing_estimator import DirectSwingAngleEstimator, LISTEN_PORT
 
+import rclpy
+from rclpy.node import Node
+from sensor_msgs.msg import Image, PointCloud2, PointField, JointState
+from cv_bridge import CvBridge
+import std_msgs.msg
+import numpy as np
+from scipy.spatial.transform import Rotation as R
+
 # LIDAR 协议常量
 LIDARPOINTCLOUD = 0x01
 LIDAR_IP = "192.168.158.98"
 LIDAR_PORT = 6543
 
-from multimodal_recorder import MultimodalRecorder, VideoStreamThread
+class Ros2DataPublisher(Node):
+    def __init__(self):
+        super().__init__('multimodal_excavator_gui')
+        self.bridge = CvBridge()
+        
+        # Publishers
+        self.pub_cam1 = self.create_publisher(Image, 'camera1/image_raw', 10)
+        self.pub_cam2 = self.create_publisher(Image, 'camera2/image_raw', 10)
+        self.pub_cam_hik = self.create_publisher(Image, 'camera_hik/image_raw', 10)
+        
+        self.pub_lidar = self.create_publisher(PointCloud2, 'lidar/points', 10)
+        
+        # LIDAR 到 base_link 的静态 TF (从 sensors_tf.launch.py 中提取 map -> base_link 逆矩阵等效)
+        # tf2 args: [-0.5500, -0.2000, 1.2712, 0.0532, 0.0349, 3.0316] map base_link
+        # 这意味着：base_link 在 map (LIDAR) 坐标系下的位姿。
+        # 我们要将 LIDAR (map) 坐标系下的点云，转换到 base_link 坐标系下。
+        # 注意: ros2 static_transform_publisher x y z yaw pitch roll frame_id child_frame_id
+        # args=['-0.5500', '-0.2000', '1.2712', '0.0532', '0.0349', '3.0316', 'map', 'base_link']
+        # 这意味着它发布的是 map -> base_link 的正向变换。
+        # 如果点 P_map 在 map 中，它在 base_link 中的坐标 P_base = T_base_map * P_map
+        # TF 树中的 T_map_base (即把 base_link 里的点转到 map 里的矩阵) 就是我们从参数构建的矩阵。
+        # 因此，P_map = T_map_base * P_base  =>  P_base = (T_map_base)^-1 * P_map
+        
+        tx = -0.5500
+        ty = -0.2000
+        tz = 1.2712
+        yaw = 0.0532
+        pitch = 0.0349
+        roll = 3.0316
+        
+        # ROS 的 static_transform_publisher 接受的欧拉角是 yaw, pitch, roll，也就是围绕 z, y, x 轴旋转
+        # 且是 fixed axis 旋转 (extrinsic, 'xyz')，等价于 intrinsic 'ZYX'
+        # scipy 中的 'XYZ' extrinsic == 'zyx' intrinsic
+        # 我们按照 ROS TF 的标准方式构建 map->base_link 的齐次矩阵
+        self.lidar_rot = R.from_euler('xyz', [roll, pitch, yaw]).as_matrix()
+        self.lidar_trans = np.array([tx, ty, tz])
+        
+        # base_link 到 map 的齐次矩阵:
+        # T_map_base = [ R   t ]
+        #              [ 0   1 ]
+        # P_map = T_map_base * P_base
+        # 所以 P_base = T_map_base^-1 * P_map = R^T * P_map - R^T * t
+        self.lidar_rot_inv = self.lidar_rot.T
+        self.lidar_trans_inv = -self.lidar_rot_inv @ self.lidar_trans
+        
+        self.pub_joint = self.create_publisher(JointState, 'excavator/joint_states', 10)
+        
+    def publish_image(self, cam_name, frame):
+        """
+        发布相机图像数据
+        - Topic: /camera1/image_raw, /camera2/image_raw, /camera_hik/image_raw
+        - 类型: sensor_msgs/msg/Image
+        - 频率: 约 10Hz (受 VideoStreamThread 中的 sleep 限制)
+        - 数据: BGR8 编码的原始图像帧，带系统时间戳
+        """
+        if frame is None:
+            return
+        msg = self.bridge.cv2_to_imgmsg(frame, encoding="bgr8")
+        msg.header.stamp = self.get_clock().now().to_msg()
+        msg.header.frame_id = cam_name
+        if cam_name == "cam1":
+            self.pub_cam1.publish(msg)
+        elif cam_name == "cam2":
+            self.pub_cam2.publish(msg)
+        elif cam_name == "cam_hik":
+            self.pub_cam_hik.publish(msg)
+
+    def publish_pointcloud(self, pts_array):
+        """
+        发布雷达点云数据
+        - Topic: /lidar/points
+        - 类型: sensor_msgs/msg/PointCloud2
+        - 频率: 10Hz (在 UDP 监听线程中攒满 0.1 秒的 UDP 数据包后统一聚合发布)
+        - 数据: 包含 x, y, z 三个 Float32 字段的无序点云，采用雷达自身坐标系
+        """
+        if pts_array is None or len(pts_array) == 0:
+            return
+            
+        msg = PointCloud2()
+        msg.header.stamp = self.get_clock().now().to_msg()
+        msg.header.frame_id = "base_link"
+        
+        # 将点云从 lidar 本地(map)坐标系转换到 base_link
+        # pts_array shape is (N, 3)
+        pts_base_link = (self.lidar_rot_inv @ pts_array.T).T + self.lidar_trans_inv
+        
+        # --- 根据 base_link 坐标系进行空间有效区域过滤 ---
+        # 仅保留 x, y 在 (-2, 2) 之间，且 z > -0.1 的点
+        mask = (
+            (pts_base_link[:, 0] > -2.0) & (pts_base_link[:, 0] < 2.0) &
+            (pts_base_link[:, 1] > -2.0) & (pts_base_link[:, 1] < 2.0) &
+            (pts_base_link[:, 2] > -0.1)
+        )
+        pts_base_link = pts_base_link[mask]
+        
+        # 如果过滤后没有点了，直接跳过发布
+        if len(pts_base_link) == 0:
+            return
+        
+        msg.height = 1
+        msg.width = len(pts_base_link)
+        
+        msg.fields = [
+            PointField(name='x', offset=0, datatype=PointField.FLOAT32, count=1),
+            PointField(name='y', offset=4, datatype=PointField.FLOAT32, count=1),
+            PointField(name='z', offset=8, datatype=PointField.FLOAT32, count=1)
+        ]
+        
+        msg.is_bigendian = False
+        msg.point_step = 12
+        msg.row_step = msg.point_step * msg.width
+        msg.is_dense = True
+        msg.data = pts_base_link.astype(np.float32).tobytes()
+        
+        self.pub_lidar.publish(msg)
+
+    def publish_joint_state(self, diff_ab, diff_ba, diff_bs, yaw_s):
+        """
+        发布本体关节角度与姿态数据
+        - Topic: /excavator/joint_states
+        - 类型: sensor_msgs/msg/JointState
+        - 频率: 20Hz (由 _update_loop 主循环按 50ms 周期发布)
+        - 数据: 包含 4 个关节角度，以标准弧度 (Radians) 表示
+        
+        关节数组顺序及对应关系 (msg.position):
+          [0] boom_joint   : 大臂-回转 夹角 (diff_bs)
+          [1] arm_joint    : 小臂-大臂 夹角 (diff_ab)
+          [2] bucket_joint : 铲斗-小臂 夹角 (diff_ba)
+          [3] swing_joint  : 回转偏航角 (yaw_s, 由 IMU 解算)
+        """
+        msg = JointState()
+        msg.header.stamp = self.get_clock().now().to_msg()
+        
+        # Joint names should match URDF if you have one
+        msg.name = ['boom_joint', 'arm_joint', 'bucket_joint', 'swing_joint']
+        
+        # Convert degrees to radians for standard ROS format
+        msg.position = [
+            math.radians(diff_bs),
+            math.radians(diff_ab),
+            math.radians(diff_ba),
+            math.radians(yaw_s)
+        ]
+        self.pub_joint.publish(msg)
+
+import cv2
+class VideoStreamThread(threading.Thread):
+    def __init__(self, name, rtsp_url, ros_node, transport="udp", hw_status_dict=None):
+        super().__init__(daemon=True)
+        self.name = name
+        self.rtsp_url = rtsp_url
+        self.ros_node = ros_node
+        self.transport = transport
+        self.hw_status_dict = hw_status_dict
+        self.running = True
+        # 增加 fflags;nobuffer 和 flags;low_delay 强制降低 FFMPEG 解码延迟
+        os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = f"rtsp_transport;{self.transport}|stimeout;3000000|fflags;nobuffer|flags;low_delay"
+
+    def run(self):
+        print(f"[Camera {self.name}] 尝试连接 RTSP流: {self.rtsp_url}")
+        cap = cv2.VideoCapture(self.rtsp_url, cv2.CAP_FFMPEG)
+        # 强制将 OpenCV 内部缓冲设为 1
+        cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+        
+        if not cap.isOpened():
+            if self.hw_status_dict is not None:
+                self.hw_status_dict[self.name] = "failed"
+            return
+            
+        if self.hw_status_dict is not None:
+            self.hw_status_dict[self.name] = "connected"
+        
+        last_pub_time = 0
+        
+        while self.running:
+            # 必须全速读取！不能在读取后 sleep，否则底层缓冲区会疯狂积压旧画面，导致花屏和巨大延迟
+            ret, frame = cap.read()
+            if not ret:
+                time.sleep(1)
+                cap.release()
+                cap = cv2.VideoCapture(self.rtsp_url, cv2.CAP_FFMPEG)
+                cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+                continue
+            
+            # 发布 ROS 2 Image 消息，控制发布频率在 10Hz 左右以降低网络和CPU负载
+            current_time = time.time()
+            if current_time - last_pub_time >= 0.1:
+                self.ros_node.publish_image(self.name, frame)
+                last_pub_time = current_time
+
+        cap.release()
+
+    def stop(self):
+        self.running = False
 
 class V11MultimodalGUI:
-    def __init__(self, root):
+    def __init__(self, root, ros_node):
         self.root = root
-        self.root.title("V11 多模态挖掘机端到端数据集采集系统")
+        self.ros_node = ros_node
+        self.root.title("V11 ROS2 控制与传感器发布节点")
         self.root.geometry("800x700")
         
-        # 初始化数据集记录器
-        self.recorder = MultimodalRecorder()
+        # 初始化 ROS 2 发布器作为 recorder 替代
         self.camera_threads = []
         
         # 硬件状态字典
@@ -61,16 +262,20 @@ class V11MultimodalGUI:
             self.base_controller = build_controller(port="/dev/ttyUSB_Controller", baudrate=115200)
             if not self.base_controller.connect():
                 self.hw_status["controller"] = "failed"
-                messagebox.showwarning("连接失败", "无法打开 CAN 串口(/dev/ttyUSB_Controller)，当前处于离线模式。")
+                messagebox.showwarning("连接失败", "无法打开 CAN 串口(/dev/ttyUSB_Controller)，当前处于离线模式 (离线模式下仅能读取传感器并发布话题)。")
             else:
                 self.hw_status["controller"] = "connected"
         except Exception as e:
             self.hw_status["controller"] = "failed"
-            messagebox.showerror("CAN 初始化失败", str(e))
+            print(f"CAN 初始化失败: {e}")
             self.base_controller = None
 
         # 2. 包装成闭环角度控制器
-        self.angle_ctrl = AngleController(self.base_controller)
+        if self.base_controller and self.hw_status["controller"] == "connected":
+            self.angle_ctrl = AngleController(self.base_controller)
+        else:
+            self.angle_ctrl = None
+            print("[警告] CAN 控制器离线，控制指令将被忽略。")
         self.kin = ExcavatorKinematics()
 
         # 实时3D可视化相关变量
@@ -138,15 +343,15 @@ class V11MultimodalGUI:
     def _start_camera_threads(self):
         # 海康摄像头 (建议 TCP)
         hik_url = "rtsp://admin:GWWzPzb2Tci@192.168.158.101:554/Streaming/Channels/101"
-        t_hik = VideoStreamThread("cam_hik", hik_url, self.recorder, transport="tcp", hw_status_dict=self.hw_status)
+        t_hik = VideoStreamThread("cam_hik", hik_url, self.ros_node, transport="tcp", hw_status_dict=self.hw_status)
         
         # 网络摄像头 1 (UDP)
         net1_url = "rtsp://admin:GWWzPzb2Tci@192.168.158.102:554/stream"
-        t_net1 = VideoStreamThread("cam1", net1_url, self.recorder, transport="udp", hw_status_dict=self.hw_status)
+        t_net1 = VideoStreamThread("cam1", net1_url, self.ros_node, transport="udp", hw_status_dict=self.hw_status)
         
         # 网络摄像头 2 (UDP)
         net2_url = "rtsp://admin:@192.168.158.103:554/stream"
-        t_net2 = VideoStreamThread("cam2", net2_url, self.recorder, transport="udp", hw_status_dict=self.hw_status)
+        t_net2 = VideoStreamThread("cam2", net2_url, self.ros_node, transport="udp", hw_status_dict=self.hw_status)
         
         self.camera_threads = [t_hik, t_net1, t_net2]
         self.cams = self.camera_threads
@@ -258,46 +463,44 @@ class V11MultimodalGUI:
                     self._last_print_time = time.time()
                 
                 # C++ 驱动实际上并不检查 data_type，只要包头是 0 或 1 均认为是点云
-                if self.recorder.is_recording:
-                    try:
-                        # 优化：使用 numpy 高效解析点云并聚合保存，避免每秒创建几百个线程和文件导致卡死
-                        if not hasattr(self, 'pc_buffer'):
-                            self.pc_buffer = []
+                try:
+                    # 优化：使用 numpy 高效解析点云并聚合保存，避免每秒创建几百个线程和文件导致卡死
+                    if not hasattr(self, 'pc_buffer'):
+                        self.pc_buffer = []
+                        self.last_pc_save_time = time.time()
+                        
+                    if dot_num > 0 and len(data) >= 36 + dot_num * 10:
+                        buf = data[36:36 + dot_num * 10]
+                        dt = np.dtype([('word1', '<u4'), ('word2', '<u4'), ('ref', 'u1'), ('tag', 'u1')])
+                        arr = np.frombuffer(buf, dtype=dt)
+                        
+                        depth = arr['word1'] & 0xFFFFFF
+                        theta_hi = (arr['word1'] >> 24) & 0xFF
+                        theta_lo = arr['word2'] & 0xFFF
+                        phi = (arr['word2'] >> 12) & 0xFFFFF
+                        
+                        theta = (theta_hi << 12) | theta_lo
+                        ang = (90000 - theta) * (math.pi / 180000.0)
+                        depth_m = depth / 1000.0
+                        
+                        r = depth_m * np.cos(ang)
+                        z = depth_m * np.sin(ang)
+                        phi_ang = phi * (math.pi / 180000.0)
+                        x = np.cos(phi_ang) * r
+                        y = np.sin(phi_ang) * r
+                        
+                        pts = np.column_stack((x, y, z))
+                        self.pc_buffer.extend(pts.tolist())
+                        
+                        # 每 0.1 秒 (10Hz) 发布一次聚合的点云
+                        if time.time() - self.last_pc_save_time >= 0.1:
+                            if self.pc_buffer:
+                                pts_arr = np.array(self.pc_buffer, dtype=np.float32)
+                                self.ros_node.publish_pointcloud(pts_arr)
+                                self.pc_buffer = []
                             self.last_pc_save_time = time.time()
-                            
-                        if dot_num > 0 and len(data) >= 36 + dot_num * 10:
-                            buf = data[36:36 + dot_num * 10]
-                            dt = np.dtype([('word1', '<u4'), ('word2', '<u4'), ('ref', 'u1'), ('tag', 'u1')])
-                            arr = np.frombuffer(buf, dtype=dt)
-                            
-                            depth = arr['word1'] & 0xFFFFFF
-                            theta_hi = (arr['word1'] >> 24) & 0xFF
-                            theta_lo = arr['word2'] & 0xFFF
-                            phi = (arr['word2'] >> 12) & 0xFFFFF
-                            
-                            theta = (theta_hi << 12) | theta_lo
-                            ang = (90000 - theta) * (math.pi / 180000.0)
-                            depth_m = depth / 1000.0
-                            
-                            r = depth_m * np.cos(ang)
-                            z = depth_m * np.sin(ang)
-                            phi_ang = phi * (math.pi / 180000.0)
-                            x = np.cos(phi_ang) * r
-                            y = np.sin(phi_ang) * r
-                            
-                            pts = np.column_stack((x, y, z))
-                            self.pc_buffer.extend(pts.tolist())
-                            
-                            # 每 0.1 秒 (10Hz) 落盘一次聚合的点云，极大降低 IO 压力
-                            if time.time() - self.last_pc_save_time >= 0.1:
-                                if self.pc_buffer:
-                                    ts = time.time()
-                                    pts_arr = np.array(self.pc_buffer, dtype=np.float32)
-                                    threading.Thread(target=self.recorder.save_pointcloud, args=(ts, pts_arr), daemon=True).start()
-                                    self.pc_buffer = []
-                                self.last_pc_save_time = time.time()
-                    except Exception as e:
-                        print(f"[雷达数据监听] 解析点云异常: {e}")
+                except Exception as e:
+                    print(f"[雷达数据监听] 解析点云异常: {e}")
 
         sock.close()
 
@@ -361,14 +564,9 @@ class V11MultimodalGUI:
         main_frame = ttk.Frame(self.root, padding=10)
         main_frame.pack(fill=tk.BOTH, expand=True)
 
-        # --- 顶部：多模态录制总控区 ---
-        dataset_frame = ttk.LabelFrame(main_frame, text="【多模态数据集录制 (图像/点云/本体状态/控制指令)】", padding=10)
-        dataset_frame.pack(fill=tk.X, pady=5)
         
-        self.btn_dataset_record = tk.Button(dataset_frame, text="🚀 启动端到端数据采集", command=self._toggle_dataset_recording, bg="#ff9999", font=("Arial", 12, "bold"))
-        self.btn_dataset_record.pack(fill=tk.X, pady=5)
-        
-        # --- 硬件连接状态区 ---
+        # 移除 UI 中与直接写入磁盘相关的数据集录制按钮
+        # 顶部：硬件连接状态区
         hw_frame = ttk.LabelFrame(main_frame, text="硬件连接状态", padding=10)
         hw_frame.pack(fill=tk.X, pady=5)
         
@@ -448,18 +646,11 @@ class V11MultimodalGUI:
 
     def _emergency_stop(self):
         self.script_running = False
-        self.angle_ctrl.stop_all()
+        if self.angle_ctrl:
+            self.angle_ctrl.stop_all()
 
     def _toggle_dataset_recording(self):
-        """开启或关闭多模态数据集录制"""
-        if not self.recorder.is_recording:
-            self.recorder.start()
-            self.btn_dataset_record.config(text="⏹ 停止端到端数据采集", bg="#99ff99")
-            messagebox.showinfo("采集启动", f"正在高频同步记录 3路视觉+点云+本体状态！\n保存目录: {self.recorder.session_dir}")
-        else:
-            self.recorder.stop()
-            self.btn_dataset_record.config(text="🚀 启动端到端数据采集", bg="#ff9999")
-            messagebox.showinfo("采集停止", "多模态数据集采集已停止，文件已安全刷入磁盘。")
+        pass # The UI button was removed
 
     def _toggle_recording(self):
         if not self.is_recording:
@@ -501,13 +692,6 @@ class V11MultimodalGUI:
         self.live_traj_d.clear()
         self.live_traj_z.clear()
         self._open_live_3d_window()
-        
-        # 自动开启多模态录制（如果还没开）
-        self.auto_started_recording = False
-        if not self.recorder.is_recording:
-            self.recorder.start()
-            self.auto_started_recording = True
-            self.btn_dataset_record.config(text="⏹ 停止端到端数据采集 (剧本自动)", bg="#99ff99")
         
         threading.Thread(target=self._execute_script_thread, args=(script_data, os.path.basename(file_path)), daemon=True).start()
 
@@ -639,6 +823,13 @@ class V11MultimodalGUI:
             print(f"[GIF] 保存失败: {e}")
 
     def _execute_script_thread(self, script_data, filename):
+        if not self.angle_ctrl:
+            self.root.after(0, lambda: messagebox.showerror("错误", "当前处于离线模式，无法执行控制剧本！"))
+            self.script_running = False
+            self.root.after(0, lambda: self.btn_load_script.config(state="normal"))
+            self.root.after(0, lambda: self.lbl_exec_status.config(text="当前状态: 执行失败 (离线)"))
+            return
+
         try:
             for idx, step in enumerate(script_data):
                 if not self.script_running:
@@ -706,13 +897,8 @@ class V11MultimodalGUI:
             self.root.after(0, lambda: self.lbl_exec_status.config(text="当前状态: 执行完毕/已停止"))
             self.root.after(0, lambda: self.btn_load_script.config(state="normal"))
             
-            save_dir = self.recorder.session_dir
+            save_dir = self.json_dir
             threading.Thread(target=self._save_live_gif, args=(filename, save_dir), daemon=True).start()
-            
-            if getattr(self, 'auto_started_recording', False):
-                self.recorder.stop()
-                self.auto_started_recording = False
-                self.root.after(0, lambda: self.btn_dataset_record.config(text="🚀 启动端到端数据采集", bg="#ff9999"))
 
     def _save_script(self):
         if self.is_recording:
@@ -799,11 +985,14 @@ class V11MultimodalGUI:
             self.recorded_script.append(record_item)
             print(f"[录制] 已记录: {label_text} 参数: {target_val}")
             
-        self.angle_ctrl.move_joint_to_angle(
-            joint_name, target_val, tolerance=2.0, 
-            ch1_mv=ch1, ch2_mv=ch2, ch3_mv=ch3,
-            ramp_up_s=ramp_up, ramp_down_s=ramp_down
-        )
+        if self.angle_ctrl:
+            self.angle_ctrl.move_joint_to_angle(
+                joint_name, target_val, tolerance=2.0, 
+                ch1_mv=ch1, ch2_mv=ch2, ch3_mv=ch3,
+                ramp_up_s=ramp_up, ramp_down_s=ramp_down
+            )
+        else:
+            print(f"[警告] 离线模式：无法移动 {joint_name} 至 {target_val}")
 
     def _create_ctrl_row(self, parent, row, label_text, joint_name, target_var, entry_label):
         ttk.Label(parent, text=f"{label_text} {entry_label}").grid(row=row, column=0, padx=10, pady=10, sticky="e")
@@ -844,7 +1033,8 @@ class V11MultimodalGUI:
         update_lbl(self.lbl_hw_cam2, "网络相机2", self.hw_status["cam2"])
 
         # 更新传感器数据给控制器
-        self.angle_ctrl.update_sensor_data(self.sensor_data)
+        if self.angle_ctrl:
+            self.angle_ctrl.update_sensor_data(self.sensor_data)
         
         # 更新界面显示 (计算真实相减的夹角，这与 v3 版本相符)
         d = self.sensor_data
@@ -867,14 +1057,9 @@ class V11MultimodalGUI:
         # 记录多模态传感器状态 (10Hz~20Hz 左右)
         ts = time.time()
         yaw_rate = self.sensor_data["回转"].get("yaw_rate", 0.0)
-        self.recorder.log_sensor_state(ts, diff_ab, diff_ba, diff_bs, yaw_s, yaw_rate)
         
-        # 记录当前的控制指令输出
-        if self.script_running:
-            ch1, ch2, ch3 = self.angle_ctrl.get_current_outputs() if hasattr(self.angle_ctrl, 'get_current_outputs') else (0,0,0)
-        else:
-            ch1, ch2, ch3 = 0, 0, 3000
-        self.recorder.log_control_cmd(ts, ch1, ch2, ch3)
+        # 发布 ROS 2 JointState
+        self.ros_node.publish_joint_state(diff_ab, diff_ba, diff_bs, yaw_s)
 
         # 更新3D可视化
         if self.script_running:
@@ -919,10 +1104,6 @@ class V11MultimodalGUI:
     def on_closing(self):
         print("正在关闭...")
         self.is_running = False
-        
-        # 安全停止录制，确保 mp4 和 csv 被正确释放和保存
-        if self.recorder.is_recording:
-            self.recorder.stop()
             
         # 停止所有拉流线程，防止阻塞退出
         if hasattr(self, 'cams'):
@@ -960,12 +1141,30 @@ class V11MultimodalGUI:
         # 强制结束所有残留守护线程，防止 Ctrl+C 后进程卡住
         os._exit(0)
 
-if __name__ == "__main__":
+def main():
+    rclpy.init()
+    ros_node = Ros2DataPublisher()
+    
+    # Run tkinter in the main thread and ros spin in a background thread
+    import threading
+    ros_thread = threading.Thread(target=rclpy.spin, args=(ros_node,), daemon=True)
+    ros_thread.start()
+    
     try:
         root = tk.Tk()
-        app = V11MultimodalGUI(root)
-        root.protocol("WM_DELETE_WINDOW", app.on_closing)
+        app = V11MultimodalGUI(root, ros_node)
+        
+        def on_closing():
+            app.on_closing()
+            ros_node.destroy_node()
+            rclpy.shutdown()
+            os._exit(0)
+            
+        root.protocol("WM_DELETE_WINDOW", on_closing)
         root.mainloop()
     except KeyboardInterrupt:
         print("\n[Ctrl+C] 捕捉到退出信号，强制结束程序...")
         os._exit(0)
+
+if __name__ == "__main__":
+    main()

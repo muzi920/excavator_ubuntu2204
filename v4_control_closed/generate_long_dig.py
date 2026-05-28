@@ -12,10 +12,29 @@ def generate_long_script():
     with open(template_path, 'r', encoding='utf-8') as f:
         template = json.load(f)
         
-    init_steps = template[:5]
-    dig_template = template[5:18]
-    
-    final_script = copy.deepcopy(init_steps)
+    final_script = []
+    current_step_idx = 1
+
+    # 提取初始化步骤和循环步骤
+    init_steps = []
+    dig_template = []
+    for step in template:
+        desc = step.get("description", "")
+        if "初始" in desc or "初始化" in desc:
+            init_steps.append(step)
+        else:
+            dig_template.append(step)
+            
+    if not dig_template:
+        dig_template = init_steps
+        init_steps = []
+
+    # 1. 仅在第一轮添加一次初始化步骤
+    for step in init_steps:
+        new_step = copy.deepcopy(step)
+        new_step["step"] = current_step_idx
+        final_script.append(new_step)
+        current_step_idx += 1
     
     arm_angles = np.arange(45.0, 56.0, 1.0)
 
@@ -27,8 +46,6 @@ def generate_long_script():
     #   ...
     #   左转 -2.4, 回正 +2.5
     dump_times = np.arange(1.0, 2.5, 0.1)  # 1.0 ~ 2.4，共 15 个
-    
-    current_step_idx = 6
     round_count = 1
     
     for angle in arm_angles:

@@ -29,7 +29,7 @@ def generate(
     output_path = output_json if os.path.isabs(output_json) else os.path.join(json_dir, output_json)
 
     template = _load(template_path)
-    init_steps = [s for s in template if s.get("is_init_step") is True]
+    init_steps = [s for s in template if s.get("is_init_step") is True or "初始" in s.get("description", "") or "初始化" in s.get("description", "")]
 
     by_step = {}
     for s in template:

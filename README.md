@@ -221,13 +221,48 @@ map
     └── hikvision_cam_frame
 ```
 
-## 数据存储规范
+## 2. V11 多模态数据集采集架构演进 (ROS 2)
 
-为了防止数据混乱，当前系统实行严格的文件归档规范：
-- **剧本文件**：无论是手动示教录制的剧本，还是代码生成的批量测试剧本，统统保存在 `src/shandong/json/` 目录下。
-- **数据集**：所有的多模态采集产物均保存在 `src/shandong/data/` 目录下。每次启动采集都会以 `v11_YYYYMMDD_HHMMSS/` 命名新建一个子目录。
+在 V11 版本中，系统架构已全面演进为 **基于 ROS 2 标准 Topic 的发布-订阅模式**。Python 核心采集脚本（`v11_multimodal_dataset_collection/ros2_multimodal_gui.py`）不再直接执行高频写盘操作，而是将所有传感器数据打上系统绝对时间戳后封装为标准的 ROS 2 消息实时发布，用户需利用 `rosbag2` 统一录制。
 
-## 与现场部署相关的补充说明
+**当前可用的话题 (Topics) 列表及详情**：
+
+| Topic 名称 | 消息类型 (ROS 2) | 发布频率 | 包含数据与详情说明 |
+| :--- | :--- | :--- | :--- |
+| `/camera_hik/image_raw` | `sensor_msgs/Image` | ~10Hz | 海康相机（主视）实时画面流。BGR8 编码。 |
+| `/camera1/image_raw` | `sensor_msgs/Image` | ~10Hz | 网络相机 1 实时画面流。BGR8 编码。 |
+| `/camera2/image_raw` | `sensor_msgs/Image` | ~10Hz | 网络相机 2 实时画面流。BGR8 编码。 |
+| `/lidar/points` | `sensor_msgs/PointCloud2` | 10Hz | 聚合后的三维激光雷达点云数据。包含解析完成的 `x`, `y`, `z` 浮点坐标。 |
+| `/excavator/joint_states` | `sensor_msgs/JointState` | 20Hz | 挖掘机本体四个关节的实时绝对物理夹角，单位为 **弧度(Radians)**。<br>数组 `position` 的排列顺序为：<br>`[0] boom_joint`: 大臂与回转夹角<br>`[1] arm_joint`: 小臂与大臂夹角<br>`[2] bucket_joint`: 铲斗与小臂夹角<br>`[3] swing_joint`: 绝对偏航角（由雷达IMU解算） |
+
+**如何录制数据（一键 Bag）：**
+可通过运行 `launch/launch_gui.py` 打开简易面板，一键启动 `ros2 bag record` 录制以上所有话题，录制完毕后的包默认保存在 `src/bag/` 目录下。
+
+---
+
+## 3. 常见问题排查 (Troubleshooting)
+
+### Q1: 关闭脚本后再次启动，提示串口被占用？
+这是因为上一次关闭时，Python 脚本或 ROS 2 Launch 节点没有被彻底释放。
+**解决办法**: 运行以下命令强制杀掉残留的 Python 进程，释放 `/dev/ttyUSB*`：
+```bash
+killall -9 python3
+```
+
+### Q2: 运行 `ros2 topic list` 发现有很多旧话题（如 `/imu/arm_ang_x`）残留在列表里？
+即使你杀死了所有节点，ROS 2 底层的 FastDDS 守护进程依然会缓存这些话题的路由信息，导致你看到所谓的“幽灵话题”。
+**解决办法**: 在你当前查看 topic 的终端中，执行以下命令重启守护进程清理缓存：
+```bash
+ros2 daemon stop
+ros2 daemon start
+```
+
+### Q3: 使用 `launch_gui.py` 时，按了停止却总是自动重启？
+由于 ROS 2 Launch 的进程保护和 Respawn 机制，单次 `Ctrl+C` 往往只会被拦截。在 V11 的 `launch_gui.py` 中我们已经通过**连续发送 SIGINT 和 SIGTERM 信号**彻底解决了这个问题，确保子节点完全退出。
+
+---
+
+## 4. 与现场部署相关的补充说明
 
 ### 1. 串口稳定绑定
 由于多个 USB 转串口设备会在拔插后造成 `/dev/ttyUSB*` 乱序，本项目已经实践过两种思路：

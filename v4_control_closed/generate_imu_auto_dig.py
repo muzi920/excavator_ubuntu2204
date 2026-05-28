@@ -71,10 +71,34 @@ def main():
     final_script = []
     global_step_counter = 1
 
+    # 提取初始化步骤和循环步骤
+    init_steps = []
+    loop_steps = []
+    for step in template_steps:
+        desc = step.get("description", "")
+        # 如果描述中包含 "初始"、"到挖掘区" 且是第一步，我们可以更智能地识别
+        if "初始" in desc or "初始化" in desc:
+            init_steps.append(step)
+        else:
+            loop_steps.append(step)
+            
+    # 如果没有明确的初始化步骤，就全当成循环步骤
+    if not loop_steps:
+        loop_steps = init_steps
+        init_steps = []
+
+    # 1. 首先添加且仅添加一次初始化步骤
+    for step in init_steps:
+        new_step = copy.deepcopy(step)
+        new_step["step"] = global_step_counter
+        final_script.append(new_step)
+        global_step_counter += 1
+
+    # 2. 循环添加工作步骤
     for loop_idx in range(args.loops):
         current_dig_angle = dig_angles[loop_idx]
         
-        for step in template_steps:
+        for step in loop_steps:
             new_step = copy.deepcopy(step)
             desc = new_step.get("description", "")
             joint = new_step.get("joint", "")

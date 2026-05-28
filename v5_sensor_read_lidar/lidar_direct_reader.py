@@ -69,7 +69,7 @@ def parse_point_cloud(packet_data):
     offset = 36
     points_parsed = 0
     for i in range(dot_num):
-        if offset + 8 > len(packet_data):
+        if offset + 10 > len(packet_data):
             break
             
         point_data = struct.unpack_from('<I I B B', packet_data, offset)
@@ -99,7 +99,7 @@ def parse_point_cloud(packet_data):
         if i == 0: # Just print the first point as a sample
             print(f"  -> Sample Point 0: x={x:.3f}, y={y:.3f}, z={z:.3f}, depth={depth_m:.3f}m, ref={reflectivity}")
             
-        offset += 8
+        offset += 10
         points_parsed += 1
 
 def parse_imu_data(packet_data):

@@ -5,3 +5,4 @@ __pycache__/
 # 忽略运行日志文件
 v4_control_closed/logs/
 *.log
+/data/

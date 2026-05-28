@@ -75,6 +75,11 @@ class AngleController:
         """外部不断调用此方法，更新最新的传感器数据"""
         with self._lock:
             self.current_sensor_data = sensor_data
+            if not hasattr(self, "_sensor_ts"):
+                self._sensor_ts = {}
+            for key, val in sensor_data.items():
+                if "ts" in val:
+                    self._sensor_ts[key] = val["ts"]
 
     def update_sensor_state(self, sensor_data, sensor_ts):
         with self._lock:

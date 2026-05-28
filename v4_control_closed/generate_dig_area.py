@@ -13,6 +13,20 @@ def generate_dig_scripts():
     with open(template_path, 'r', encoding='utf-8') as f:
         template = json.load(f)
         
+    # 提取初始化步骤和循环步骤
+    init_steps = []
+    loop_steps = []
+    for step in template:
+        desc = step.get("description", "")
+        if "初始" in desc or "初始化" in desc:
+            init_steps.append(step)
+        else:
+            loop_steps.append(step)
+            
+    if not loop_steps:
+        loop_steps = init_steps
+        init_steps = []
+        
     # 定义回拉角度 (45度 到 55度，步长2度，共6个深度)
     arm_angles = [45.0, 47.0, 49.0, 51.0, 53.0, 55.0]
     
@@ -22,7 +36,8 @@ def generate_dig_scripts():
     count = 0
     for angle in arm_angles:
         for s_time in swing_times:
-            script = copy.deepcopy(template)
+            # 第一轮执行加上初始化步骤
+            script = copy.deepcopy(init_steps + loop_steps)
             
             # 1. 修改第一遍的挖土动作参数
             # 第10步是第一遍挖土的小臂回拉 (原 55.2)
