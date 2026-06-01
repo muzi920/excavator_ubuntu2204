@@ -8,6 +8,7 @@ import threading
 import math
 import struct
 import socket
+import queue
 
 # 引入底层库
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -39,6 +40,10 @@ from cv_bridge import CvBridge
 import std_msgs.msg
 import numpy as np
 from scipy.spatial.transform import Rotation as R
+from tf2_ros import TransformBroadcaster
+from geometry_msgs.msg import TransformStamped
+from templates.imu_preintegration import TiltCompensator
+from templates.pointcloud_transform import PointCloudTransform
 
 # LIDAR 协议常量
 LIDARPOINTCLOUD = 0x01
@@ -56,6 +61,11 @@ class Ros2DataPublisher(Node):
         self.pub_cam_hik = self.create_publisher(Image, 'camera_hik/image_raw', 10)
         
         self.pub_lidar = self.create_publisher(PointCloud2, 'lidar/points', 10)
+        self.pub_lidar_odom = self.create_publisher(PointCloud2, 'lidar/points_odom', 10)
+        self.pub_elevation = self.create_publisher(Image, 'lidar/elevation_map', 10)
+        
+        self.pub_joint = self.create_publisher(JointState, 'excavator/joint_states', 10)
+        self.tf_broadcaster = TransformBroadcaster(self)
         
         # LIDAR 到 base_link 的静态 TF (从 sensors_tf.launch.py 中提取 map -> base_link 逆矩阵等效)
         # tf2 args: [-0.5500, -0.2000, 1.2712, 0.0532, 0.0349, 3.0316] map base_link
@@ -90,8 +100,29 @@ class Ros2DataPublisher(Node):
         self.lidar_rot_inv = self.lidar_rot.T
         self.lidar_trans_inv = -self.lidar_rot_inv @ self.lidar_trans
         
-        self.pub_joint = self.create_publisher(JointState, 'excavator/joint_states', 10)
         
+    def publish_odom_tf(self, quaternion):
+        """
+        发布 odom -> base_link 的动态 TF。
+        这样在 RViz 中固定 odom 坐标系时，base_link 就会跟随 IMU 旋转，而周围的点云环境将保持静止！
+        """
+        t = TransformStamped()
+        t.header.stamp = self.get_clock().now().to_msg()
+        t.header.frame_id = 'odom'
+        t.child_frame_id = 'base_link'
+        
+        # 挖掘机履带不动，平移保持 0
+        t.transform.translation.x = 0.0
+        t.transform.translation.y = 0.0
+        t.transform.translation.z = 0.0
+        
+        t.transform.rotation.x = quaternion[0]
+        t.transform.rotation.y = quaternion[1]
+        t.transform.rotation.z = quaternion[2]
+        t.transform.rotation.w = quaternion[3]
+        
+        self.tf_broadcaster.sendTransform(t)
+
     def publish_image(self, cam_name, frame):
         """
         发布相机图像数据
@@ -115,27 +146,21 @@ class Ros2DataPublisher(Node):
     def publish_pointcloud(self, pts_array):
         """
         发布雷达点云数据
-        - Topic: /lidar/points
-        - 类型: sensor_msgs/msg/PointCloud2
-        - 频率: 10Hz (在 UDP 监听线程中攒满 0.1 秒的 UDP 数据包后统一聚合发布)
-        - 数据: 包含 x, y, z 三个 Float32 字段的无序点云，采用雷达自身坐标系
+        - Topic: /lidar/points (base_link 系下)
+        - Topic: /lidar/points_odom (odom 系下)
         """
         if pts_array is None or len(pts_array) == 0:
             return
             
-        msg = PointCloud2()
-        msg.header.stamp = self.get_clock().now().to_msg()
-        msg.header.frame_id = "base_link"
-        
         # 将点云从 lidar 本地(map)坐标系转换到 base_link
         # pts_array shape is (N, 3)
         pts_base_link = (self.lidar_rot_inv @ pts_array.T).T + self.lidar_trans_inv
         
         # --- 根据 base_link 坐标系进行空间有效区域过滤 ---
-        # 仅保留 x, y 在 (-2, 2) 之间，且 z > -0.1 的点
+        # 仅保留 x, y 在 (-3, 3) 之间，且 z > -0.1 的点
         mask = (
-            (pts_base_link[:, 0] > -2.0) & (pts_base_link[:, 0] < 2.0) &
-            (pts_base_link[:, 1] > -2.0) & (pts_base_link[:, 1] < 2.0) &
+            (pts_base_link[:, 0] > -3.0) & (pts_base_link[:, 0] < 3.0) &
+            (pts_base_link[:, 1] > -3.0) & (pts_base_link[:, 1] < 3.0) &
             (pts_base_link[:, 2] > -0.1)
         )
         pts_base_link = pts_base_link[mask]
@@ -143,23 +168,90 @@ class Ros2DataPublisher(Node):
         # 如果过滤后没有点了，直接跳过发布
         if len(pts_base_link) == 0:
             return
+            
+        # --- 根据 Z 轴高度 ([-0.4, 0.7]) 映射为 0-255 的灰度颜色 ---
+        z_min, z_max = -0.4, 0.7
+        z_vals = np.clip(pts_base_link[:, 2], z_min, z_max)
+        gray_vals = ((z_vals - z_min) / (z_max - z_min) * 255.0).astype(np.uint32)
+        rgb_vals = (gray_vals << 16) | (gray_vals << 8) | gray_vals
         
-        msg.height = 1
-        msg.width = len(pts_base_link)
+        dt = np.dtype([('x', np.float32), ('y', np.float32), ('z', np.float32), ('rgb', np.uint32)])
         
-        msg.fields = [
+        # 1. 发布 base_link 下的点云
+        msg_base = PointCloud2()
+        msg_base.header.stamp = self.get_clock().now().to_msg()
+        msg_base.header.frame_id = "base_link"
+        msg_base.height = 1
+        msg_base.width = len(pts_base_link)
+        msg_base.fields = [
             PointField(name='x', offset=0, datatype=PointField.FLOAT32, count=1),
             PointField(name='y', offset=4, datatype=PointField.FLOAT32, count=1),
-            PointField(name='z', offset=8, datatype=PointField.FLOAT32, count=1)
+            PointField(name='z', offset=8, datatype=PointField.FLOAT32, count=1),
+            PointField(name='rgb', offset=12, datatype=PointField.UINT32, count=1)
         ]
+        msg_base.is_bigendian = False
+        msg_base.point_step = 16
+        msg_base.row_step = msg_base.point_step * msg_base.width
+        msg_base.is_dense = True
         
-        msg.is_bigendian = False
-        msg.point_step = 12
-        msg.row_step = msg.point_step * msg.width
-        msg.is_dense = True
-        msg.data = pts_base_link.astype(np.float32).tobytes()
+        pc_data_base = np.empty(len(pts_base_link), dtype=dt)
+        pc_data_base['x'] = pts_base_link[:, 0]
+        pc_data_base['y'] = pts_base_link[:, 1]
+        pc_data_base['z'] = pts_base_link[:, 2]
+        pc_data_base['rgb'] = rgb_vals
+        msg_base.data = pc_data_base.tobytes()
+        self.pub_lidar.publish(msg_base)
         
-        self.pub_lidar.publish(msg)
+        # 2. 计算并发布 odom 下的点云
+        msg_odom = PointCloud2()
+        msg_odom.header.stamp = msg_base.header.stamp
+        msg_odom.header.frame_id = "odom"
+        msg_odom.height = 1
+        msg_odom.width = len(pts_base_link)
+        msg_odom.fields = msg_base.fields
+        msg_odom.is_bigendian = False
+        msg_odom.point_step = 16
+        msg_odom.row_step = msg_odom.point_step * msg_odom.width
+        msg_odom.is_dense = True
+        
+        # 获取当前的 base_link -> odom 的四元数 (正向)
+        quat = np.array([0.0, 0.0, 0.0, 1.0])
+        if hasattr(self, 'tilt_compensator'):
+            quat = self.tilt_compensator.get_quaternion(getattr(self, 'last_yaw_rad', 0.0))
+        
+        # --- 修复卡顿和叠加的关键 ---
+        # 之前的 transform_to_world 是用 Python 循环/纯 scipy 实现，Numpy 矩阵计算时有严重开销
+        # 在这里我们直接手写 Numpy 高效旋转矩阵计算，大幅降低 CPU 负担
+        r_matrix = R.from_quat(quat).as_matrix()
+        # pts_odom = R * P + T (T 是 0)
+        pts_odom = (r_matrix @ pts_base_link.T).T
+        
+        pc_data_odom = np.empty(len(pts_odom), dtype=dt)
+        pc_data_odom['x'] = pts_odom[:, 0]
+        pc_data_odom['y'] = pts_odom[:, 1]
+        pc_data_odom['z'] = pts_odom[:, 2]
+        pc_data_odom['rgb'] = rgb_vals
+        msg_odom.data = pc_data_odom.tobytes()
+        
+        # 移除时间锁限制，因为我们现在强制清空缓存，单帧点云数量很小，完全可以实时双发
+        self.pub_lidar_odom.publish(msg_odom)
+        
+        # 将过滤后的点云数据送入高程图线程进行 2D 转换 (依然用 base_link 的，保证高程图一直居中)
+        if hasattr(self, 'elevation_callback') and self.elevation_callback:
+            self.elevation_callback(pts_base_link)
+
+    def publish_elevation_map(self, elevation_img):
+        """
+        发布由点云转换而来的 2D 高程图 (Elevation Map)
+        - Topic: /lidar/elevation_map
+        - 类型: sensor_msgs/msg/Image (BGR8 三通道灰度图，对齐网易标准)
+        """
+        if elevation_img is None:
+            return
+        msg = self.bridge.cv2_to_imgmsg(elevation_img, encoding="bgr8")
+        msg.header.stamp = self.get_clock().now().to_msg()
+        msg.header.frame_id = "base_link"
+        self.pub_elevation.publish(msg)
 
     def publish_joint_state(self, diff_ab, diff_ba, diff_bs, yaw_s):
         """
@@ -239,6 +331,68 @@ class VideoStreamThread(threading.Thread):
 
     def stop(self):
         self.running = False
+
+def generate_elevation_map(points, x_range=(-3.0, 3.0), y_range=(-3.0, 3.0), resolution=0.03, z_range=(-0.4, 0.7), bucket_tip=None):
+    """
+    点云高程图算法 (Elevation Map)
+    将过滤后的点云投影到 2D 网格上，取每个网格内的最大 Z 值作为高程。
+    将 Z 值 [z_range[0], z_range[1]] 映射到 [0, 255] 灰度图像。
+    
+    参数:
+        points: (N, 3) Numpy Array
+        x_range, y_range: 网格的物理范围 (米)
+        resolution: 每个像素代表的物理大小 (米/像素)
+        z_range: 映射的最低和最高物理高度
+        bucket_tip: 铲尖 3D 坐标 (x, y, z)，若提供则在图上绘制铲尖位置
+    返回:
+        2D numpy array (uint8)，三通道灰度图 (对齐网易标准)
+    """
+    width = int((x_range[1] - x_range[0]) / resolution)
+    height = int((y_range[1] - y_range[0]) / resolution)
+    
+    # 初始化一个值为 z_range[0] 的一维数组
+    flat_map = np.full(width * height, z_range[0], dtype=np.float32)
+    
+    if points is not None and len(points) > 0:
+        # 映射到像素坐标
+        u = np.floor((points[:, 1] - y_range[0]) / resolution).astype(int)
+        v = np.floor((x_range[1] - points[:, 0]) / resolution).astype(int) - 1 # X反向，确保前方在图像上方
+        z = points[:, 2]
+        
+        # 过滤越界点（虽然前面过滤过，但防止边界精度误差）
+        valid_idx = (u >= 0) & (u < width) & (v >= 0) & (v < height)
+        u = u[valid_idx]
+        v = v[valid_idx]
+        z = z[valid_idx]
+        
+        # 计算在一维数组中的索引
+        flat_indices = v * width + u
+        
+        # 相同网格内的多个点，取最大的 Z 值
+        np.maximum.at(flat_map, flat_indices, z)
+        
+    elevation_map = flat_map.reshape((height, width))
+    
+    # 归一化到 0-255 灰度值
+    z_min, z_max = z_range
+    elevation_map = np.clip(elevation_map, z_min, z_max)
+    elevation_map_img = ((elevation_map - z_min) / (z_max - z_min) * 255.0).astype(np.uint8)
+    
+    # 转为 3 通道纯灰度图 (对齐网易的 3 通道格式，R=G=B)
+    import cv2
+    elevation_map_3ch = cv2.cvtColor(elevation_map_img, cv2.COLOR_GRAY2BGR)
+    
+    if bucket_tip is not None:
+        bx, by, bz = bucket_tip
+        bu = int(np.floor((by - y_range[0]) / resolution))
+        bv = int(np.floor((x_range[1] - bx) / resolution)) - 1
+        
+        # 在图像上绘制铲尖位置 (红色圆点，外加白圈提升对比度)
+        if 0 <= bu < width and 0 <= bv < height:
+            cv2.circle(elevation_map_3ch, (bu, bv), radius=3, color=(0, 0, 255), thickness=-1)
+            cv2.circle(elevation_map_3ch, (bu, bv), radius=4, color=(255, 255, 255), thickness=1)
+            
+    return elevation_map_3ch
 
 class V11MultimodalGUI:
     def __init__(self, root, ros_node):
@@ -325,15 +479,28 @@ class V11MultimodalGUI:
             "boom_swing": 0.0,
             "swing_yaw": 0.0
         }
+        self.current_bucket_tip_3d = None
 
         # 设置 JSON 统一保存目录
         self.json_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "json"))
         os.makedirs(self.json_dir, exist_ok=True)
 
+        # 实例化 IMU 倾斜补偿与预积分器
+        self.tilt_compensator = TiltCompensator(alpha=0.98)
+
         # 启动雷达 IMU 监听线程
         self.imu_running = True
         self.imu_thread = threading.Thread(target=self._imu_listener_loop, daemon=True)
         self.imu_thread.start()
+
+        # 启动点云高程图处理线程
+        self.elevation_queue = queue.Queue(maxsize=5)
+        self.elevation_running = True
+        self.elevation_thread = threading.Thread(target=self._elevation_map_loop, daemon=True)
+        self.elevation_thread.start()
+
+        # 提供给 Ros2DataPublisher 的回调，用于接收过滤后的点云
+        self.ros_node.elevation_callback = self._on_pointcloud_received
 
         # 启动三个摄像头的视频流拉取线程
         self._start_camera_threads()
@@ -360,6 +527,36 @@ class V11MultimodalGUI:
         self.cams = self.camera_threads
         for t in self.camera_threads:
             t.start()
+
+    def _on_pointcloud_received(self, pts_base_link):
+        """接收已过滤的点云，进行重力纠正后，送入队列"""
+        if self.elevation_running and not self.elevation_queue.full():
+            # 获取重力对齐的四元数 (仅 Roll, Pitch，忽略 Yaw)
+            quat_gravity = self.tilt_compensator.get_gravity_aligned_quaternion()
+            # 纠正点云，使得高程图永远水平
+            pts_horizontal = PointCloudTransform.gravity_align_only(pts_base_link, quat_gravity)
+            
+            self.elevation_queue.put((pts_horizontal, self.current_bucket_tip_3d))
+
+    def _elevation_map_loop(self):
+        """高程图生成线程：消费点云，生成灰度图并发布"""
+        while self.elevation_running:
+            try:
+                # 阻塞等待点云数据，超时时间0.1秒
+                item = self.elevation_queue.get(timeout=0.1)
+                if isinstance(item, tuple) and len(item) == 2:
+                    pts, bucket_tip = item
+                else:
+                    pts = item
+                    bucket_tip = None
+                # 生成高程图
+                elevation_img = generate_elevation_map(pts, bucket_tip=bucket_tip)
+                # 发布到 ROS Topic
+                self.ros_node.publish_elevation_map(elevation_img)
+            except queue.Empty:
+                continue
+            except Exception as e:
+                print(f"[高程图生成异常]: {e}")
 
     def _send_lidar_start_command(self, sock):
         """模拟 C++ 驱动发送启动雷达的点云/IMU 推送指令 (LSTARH)"""
@@ -441,12 +638,32 @@ class V11MultimodalGUI:
                     gyro_z = imu_data[6] * 4000.0 / 0x10000 * math.pi / 180
                     timestamp = imu_data[9]
                     
+                    # --- 1. 原有的 DirectSwingAngleEstimator (计算高精度 Yaw) ---
+                    if not hasattr(self, 'last_yaw_rad'):
+                        self.last_yaw_rad = 0.0
+                        
                     res = estimator.process_imu((accel_x, accel_y, accel_z), (gyro_x, gyro_y, gyro_z), timestamp)
                     if res is not None:
                         swing_deg, w_yaw = res
                         self.sensor_data["回转"]["yaw"] = swing_deg
                         self.sensor_data["回转"]["yaw_rate"] = w_yaw
                         self.sensor_data["回转"]["ts"] = time.time()
+                        # V4 控制器中：正右负左。而 ROS TF 中：左(CCW)为正。所以加负号。
+                        self.last_yaw_rad = -math.radians(swing_deg)
+                        
+                    # --- 2. 更新 TiltCompensator 并发布 Odom TF ---
+                    # 转换雷达坐标系下的 IMU 数据到 base_link
+                    accel_base = self.ros_node.lidar_rot_inv @ np.array([accel_x, accel_y, accel_z])
+                    gyro_base = self.ros_node.lidar_rot_inv @ np.array([gyro_x, gyro_y, gyro_z])
+                    
+                    current_time = time.time()
+                    quat = self.tilt_compensator.update(current_time, accel_base, gyro_base, external_yaw=self.last_yaw_rad)
+                    
+                    if not hasattr(self, 'last_tf_time'):
+                        self.last_tf_time = 0
+                    if current_time - self.last_tf_time > 0.02: # 50Hz TF 频率
+                        self.ros_node.publish_odom_tf(quat)
+                        self.last_tf_time = current_time
                 except struct.error:
                     pass
                     
@@ -467,11 +684,11 @@ class V11MultimodalGUI:
                 
                 # C++ 驱动实际上并不检查 data_type，只要包头是 0 或 1 均认为是点云
                 try:
-                    # 优化：使用 numpy 高效解析点云并聚合保存，避免每秒创建几百个线程和文件导致卡死
+                    # 恢复 0.1s 一帧的累积逻辑 (雷达旋转一周大约需要 0.1s，这是一帧完整的 360 度点云)
                     if not hasattr(self, 'pc_buffer'):
                         self.pc_buffer = []
                         self.last_pc_save_time = time.time()
-                        
+
                     if dot_num > 0 and len(data) >= 36 + dot_num * 10:
                         buf = data[36:36 + dot_num * 10]
                         dt = np.dtype([('word1', '<u4'), ('word2', '<u4'), ('ref', 'u1'), ('tag', 'u1')])
@@ -493,13 +710,16 @@ class V11MultimodalGUI:
                         y = np.sin(phi_ang) * r
                         
                         pts = np.column_stack((x, y, z))
-                        self.pc_buffer.extend(pts.tolist())
                         
-                        # 每 0.1 秒 (10Hz) 发布一次聚合的点云
+                        if len(pts) > 0:
+                            self.pc_buffer.extend(pts.tolist())
+
+                        # 每 0.1 秒 (10Hz) 发布一次完整的一帧点云
                         if time.time() - self.last_pc_save_time >= 0.1:
                             if self.pc_buffer:
                                 pts_arr = np.array(self.pc_buffer, dtype=np.float32)
                                 self.ros_node.publish_pointcloud(pts_arr)
+                                # 发布完成后清空，准备累积下一帧
                                 self.pc_buffer = []
                             self.last_pc_save_time = time.time()
                 except Exception as e:
@@ -1056,6 +1276,12 @@ class V11MultimodalGUI:
         self.current_angles["arm_boom"] = diff_ab
         self.current_angles["boom_swing"] = diff_bs
         self.current_angles["swing_yaw"] = yaw_s
+        
+        # 计算铲尖 3D 坐标并缓存给高程图线程
+        res = self.kin.forward_kinematics_v4(diff_bs, diff_ab, diff_ba)
+        bx_2d, bz = res['bucket_tip']
+        yaw_rad = math.radians(yaw_s)
+        self.current_bucket_tip_3d = (bx_2d * math.cos(yaw_rad), bx_2d * math.sin(yaw_rad), bz)
 
         # 记录多模态传感器状态 (10Hz~20Hz 左右)
         ts = time.time()
@@ -1127,10 +1353,13 @@ class V11MultimodalGUI:
             
         time.sleep(0.5)
         
-        # 3. 强制关闭串口并结束线程
+        # 强制关闭串口并结束线程
         for dev in self.devices:
             dev.isOpen = False
             dev.closeDevice()
+            
+        # 关闭高程图线程
+        self.elevation_running = False
             
         # 4. 关闭底层 CAN 串口
         if hasattr(self, 'base_controller') and self.base_controller:
