@@ -90,10 +90,10 @@ class V11LaunchGUI:
             # 仅录制指定的 5 个 V11 话题
             topics = [
                 "/camera_hik/image_raw",
-                "/camera1/image_raw",
-                "/camera2/image_raw",
                 "/lidar/points",
-                "/excavator/joint_states"
+                "/lidar/points_odom",
+                "/excavator/joint_states",
+                "/lidar/elevation_map",
             ]
             
             save_dir = "/media/libo/libo_sn7100/ubuntu2204/shandong_ws/src/bag"
