@@ -33,15 +33,28 @@ add_executable(imu_sensor_node src/imu_sensor_node.cpp src/tilt_compensator.cpp)
 ament_target_dependencies(imu_sensor_node
   rclcpp
   sensor_msgs
+  std_msgs
   geometry_msgs
   tf2
   tf2_ros
 )
+find_package(Eigen3 REQUIRED)
+target_include_directories(imu_sensor_node PUBLIC ${EIGEN3_INCLUDE_DIRS})
+
+# 3. Lidar Processor Node (Transform & Filter)
+add_executable(lidar_processor_node src/lidar_processor_node.cpp src/tilt_compensator.cpp)
+ament_target_dependencies(lidar_processor_node
+  rclcpp
+  sensor_msgs
+)
+find_package(Eigen3 REQUIRED)
+target_include_directories(lidar_processor_node PUBLIC ${EIGEN3_INCLUDE_DIRS})
 
 # Install rules
 install(TARGETS
   rtsp_camera_node
   imu_sensor_node
+  lidar_processor_node
   DESTINATION lib/${PROJECT_NAME}
 )
 
@@ -52,6 +65,9 @@ install(DIRECTORY
 
 install(PROGRAMS
   scripts/v12_hybrid_gui.py
+  scripts/inclinometer_sensor_bridge.py
+  scripts/control_executor_node.py
+  scripts/v12_launch_gui.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

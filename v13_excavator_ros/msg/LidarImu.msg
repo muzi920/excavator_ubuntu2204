@@ -1,0 +1,11 @@
+std_msgs/Header header
+bool calibrated
+float64 accel_x
+float64 accel_y
+float64 accel_z
+float64 gyro_x
+float64 gyro_y
+float64 gyro_z
+float64 swing_deg
+float64 yaw_rate
+uint64 sensor_timestamp_ns

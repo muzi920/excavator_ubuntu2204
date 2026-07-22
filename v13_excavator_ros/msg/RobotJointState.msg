@@ -1,0 +1,10 @@
+std_msgs/Header header
+bool synchronized
+float64 bucket_arm_deg
+float64 arm_boom_deg
+float64 boom_swing_deg
+float64 swing_yaw_deg
+float64 yaw_rate
+builtin_interfaces/Time inclinometer_stamp
+builtin_interfaces/Time lidar_imu_stamp
+float64 sync_delta_sec

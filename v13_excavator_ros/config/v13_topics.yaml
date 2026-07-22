@@ -1,0 +1,42 @@
+v13_inclinometer_reader:
+  ros__parameters:
+    serial_ports: ["/dev/ttyUSB_Sensor1", "/dev/ttyUSB_Sensor2", "/dev/ttyUSB_Sensor3", "/dev/ttyUSB_Sensor4"]
+    sensor_ids: [80, 81, 82, 83]
+    sensor_names: ["bucket", "arm", "boom", "swing"]
+    baudrate: 230400
+    init_sample_count: 20
+    max_group_skew_sec: 0.1
+    topic_name: "/v13/inclinometer/raw"
+    group_topic_name: "/v13/inclinometer/group"
+    status_topic: "/v13/inclinometer/status"
+
+v13_lidar_reader:
+  ros__parameters:
+    listen_port: 6668
+    lidar_ip: "192.168.158.98"
+    lidar_port: 6543
+    topic_name: "/v13/lidar/points"
+    status_topic: "/v13/lidar/status"
+
+v13_lidar_imu_reader:
+  ros__parameters:
+    listen_port: 6668
+    lidar_ip: "192.168.158.98"
+    lidar_port: 6543
+    topic_name: "/v13/lidar/imu"
+    status_topic: "/v13/lidar_imu/status"
+
+v13_controller_node:
+  ros__parameters:
+    device: "/dev/ttyUSB_Controller"
+    baudrate: 115200
+    command_topic: "/v13/controller/cmd"
+    status_topic: "/v13/controller/status"
+
+v13_main_node:
+  ros__parameters:
+    inclinometer_group_topic: "/v13/inclinometer/group"
+    lidar_imu_topic: "/v13/lidar/imu"
+    robot_joint_topic: "/v13/robot/joint_state"
+    summary_topic: "/v13/system/summary"
+    max_sync_delta_sec: 0.05

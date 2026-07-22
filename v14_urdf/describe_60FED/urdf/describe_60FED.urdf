@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+     Commit Version: 1.6.0-4-g7f85cfe  Build Version: 1.6.7995.38578
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot
+  name="describe_60FED">
+  <link
+    name="base_link">
+    <inertial>
+      <origin
+        xyz="1.17283732982087 -1.67404000439575E-07 0.266486698879777"
+        rpy="0 0 0" />
+      <mass
+        value="8.80182775130618" />
+      <inertia
+        ixx="0.235439455857889"
+        ixy="-2.163397471404E-07"
+        ixz="5.31338998665211E-05"
+        iyy="0.0247256745825407"
+        iyz="6.53661162399613E-08"
+        izz="0.2392047611081" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://describe_60FED/meshes/base_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.745098039215686 0.737254901960784 0.729411764705882 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://describe_60FED/meshes/base_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <link
+    name="shangche_Link">
+    <inertial>
+      <origin
+        xyz="-0.90993 0.32593 0.8266"
+        rpy="0 0 0" />
+      <mass
+        value="34.966" />
+      <inertia
+        ixx="2.0852"
+        ixy="0.040612"
+        ixz="-0.021393"
+        iyy="1.3175"
+        iyz="-0.056351"
+        izz="2.3414" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://describe_60FED/meshes/shangche_Link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.50196 0.50196 0.50196 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://describe_60FED/meshes/shangche_Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="huizhuan_joint"
+    type="revolute">
+    <origin
+      xyz="0 0 0.6515"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="shangche_Link" />
+    <axis
+      xyz="0 0 -1" />
+    <limit
+      lower="-3.14"
+      upper="3.14"
+      effort="100"
+      velocity="10" />
+  </joint>
+  <link
+    name="dongbi_Link">
+    <inertial>
+      <origin
+        xyz="-1.2042 0.24513 0.1683"
+        rpy="0 0 0" />
+      <mass
+        value="46.455" />
+      <inertia
+        ixx="28.61"
+        ixy="9.0565"
+        ixz="7.8476"
+        iyy="73.239"
+        iyz="-1.8501"
+        izz="61.627" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://describe_60FED/meshes/dongbi_Link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.79216 0.81961 0.93333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://describe_60FED/meshes/dongbi_Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="dongbi_joint"
+    type="revolute">
+    <origin
+      xyz="0.835 0 0.503"
+      rpy="0 0 0" />
+    <parent
+      link="shangche_Link" />
+    <child
+      link="dongbi_Link" />
+    <axis
+      xyz="0 -1 0" />
+    <limit
+      lower="-1.57"
+      upper="1.159"
+      effort="100"
+      velocity="10" />
+  </joint>
+  <link
+    name="dougan_Link">
+    <inertial>
+      <origin
+        xyz="-2.4053 0.24513 -2.5807"
+        rpy="0 0 0" />
+      <mass
+        value="46.455" />
+      <inertia
+        ixx="28.61"
+        ixy="9.0565"
+        ixz="7.8476"
+        iyy="73.239"
+        iyz="-1.8501"
+        izz="61.627" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://describe_60FED/meshes/dougan_Link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.50196 0.50196 0.50196 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://describe_60FED/meshes/dougan_Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="dougan_joint"
+    type="revolute">
+    <origin
+      xyz="1.2012 0 2.749"
+      rpy="0 0 0" />
+    <parent
+      link="dongbi_Link" />
+    <child
+      link="dougan_Link" />
+    <axis
+      xyz="0 -1 0" />
+    <limit
+      lower="-3.14"
+      upper="2.161"
+      effort="100"
+      velocity="10" />
+  </joint>
+  <link
+    name="chandou_Link">
+    <inertial>
+      <origin
+        xyz="-0.54024 -0.003303 0.45402"
+        rpy="0 0 0" />
+      <mass
+        value="2.6867" />
+      <inertia
+        ixx="0.0093572"
+        ixy="-1.9403E-07"
+        ixz="0.00013307"
+        iyy="0.0093797"
+        iyz="4.7527E-06"
+        izz="0.0016683" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://describe_60FED/meshes/chandou_Link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.50196 0.50196 0.50196 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://describe_60FED/meshes/chandou_Link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="chandou_joint"
+    type="revolute">
+    <origin
+      xyz="0.12094 0 -1.5954"
+      rpy="0 0 0" />
+    <parent
+      link="dougan_Link" />
+    <child
+      link="chandou_Link" />
+    <axis
+      xyz="0 -1 0" />
+    <limit
+      lower="-3.14"
+      upper="3.14"
+      effort="100"
+      velocity="10" />
+  </joint>
+</robot>

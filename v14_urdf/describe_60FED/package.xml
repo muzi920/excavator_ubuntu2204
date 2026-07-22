@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>describe_60FED</name>
+  <version>1.0.0</version>
+  <description>
+    URDF Description package for describe_60FED
+  </description>
+  <author>TODO</author>
+  <maintainer email="TODO@email.com">TODO</maintainer>
+  <license>BSD</license>
+
+  <!-- 使用ament_cmake构建工具 -->
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <!-- 更新ROS2依赖 -->
+  <exec_depend>launch</exec_depend>
+  <exec_depend>robot_state_publisher</exec_depend>
+  <exec_depend>rviz2</exec_depend>  <!-- ROS2中使用rviz2 -->
+  <exec_depend>joint_state_publisher_gui</exec_depend>
+  <exec_depend>gazebo_ros_pkgs</exec_depend>  <!-- ROS2中的gazebo包 -->
+
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

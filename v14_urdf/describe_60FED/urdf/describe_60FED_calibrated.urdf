@@ -1,0 +1,243 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Calibrated excavator URDF derived from:
+  src/shandong/v10_cailbration_arm/readme_arm.md
+
+  This model prioritizes kinematic alignment with the control program over
+  visual fidelity to the SolidWorks-exported CAD mesh. The goal is to make the
+  bucket-tip trajectory and joint commands consistent with the measured model.
+
+  Joint command semantics are intentionally aligned with the V4/V10 program:
+  - swing_joint  : swing_yaw      (deg, positive by standard URDF yaw)
+  - boom_joint   : boom_swing     (deg, positive means boom goes down)
+  - arm_joint    : arm_boom       (deg, positive means arm retracts / goes in)
+  - bucket_joint : bucket_arm     (deg, positive means bucket curls in)
+
+  The calibration offsets are embedded into the joint origin rpy values so that
+  the program can drive this URDF with the same joint variables used by V4.
+-->
+<robot name="describe_60FED_calibrated">
+  <material name="dark_gray">
+    <color rgba="0.25 0.25 0.25 1.0" />
+  </material>
+  <material name="light_gray">
+    <color rgba="0.65 0.65 0.65 1.0" />
+  </material>
+  <material name="yellow">
+    <color rgba="0.95 0.75 0.10 1.0" />
+  </material>
+  <material name="red">
+    <color rgba="0.85 0.20 0.20 1.0" />
+  </material>
+
+  <!--
+    Base frame definition:
+    - origin is the ground projection of the swing center
+    - +X forward
+    - +Y left
+    - +Z up
+  -->
+  <link name="base_link">
+    <visual>
+      <origin xyz="0 0 0.06" rpy="0 0 0" />
+      <geometry>
+        <box size="0.60 0.42 0.12" />
+      </geometry>
+      <material name="dark_gray" />
+    </visual>
+    <collision>
+      <origin xyz="0 0 0.06" rpy="0 0 0" />
+      <geometry>
+        <box size="0.60 0.42 0.12" />
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0.06" rpy="0 0 0" />
+      <mass value="1.0" />
+      <inertia ixx="0.01" ixy="0.0" ixz="0.0" iyy="0.01" iyz="0.0" izz="0.01" />
+    </inertial>
+  </link>
+
+  <link name="upper_structure_link">
+    <visual>
+      <origin xyz="0 0 0.16" rpy="0 0 0" />
+      <geometry>
+        <box size="0.46 0.34 0.22" />
+      </geometry>
+      <material name="light_gray" />
+    </visual>
+    <collision>
+      <origin xyz="0 0 0.16" rpy="0 0 0" />
+      <geometry>
+        <box size="0.46 0.34 0.22" />
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0.16" rpy="0 0 0" />
+      <mass value="1.0" />
+      <inertia ixx="0.01" ixy="0.0" ixz="0.0" iyy="0.01" iyz="0.0" izz="0.01" />
+    </inertial>
+  </link>
+
+  <joint name="swing_joint" type="revolute">
+    <origin xyz="0 0 0" rpy="0 0 0" />
+    <parent link="base_link" />
+    <child link="upper_structure_link" />
+    <axis xyz="0 0 1" />
+    <limit lower="-3.141592653589793" upper="3.141592653589793" effort="50" velocity="2.0" />
+  </joint>
+
+  <!--
+    Boom root pivot from readme_arm:
+    Offset_X = 0.25 m
+    Offset_Z = 0.40 m
+
+    The boom is modeled as a rigid goose-neck with:
+    L1 = 0.35 m
+    L2 = 0.60 m
+    bend = 46 deg downward from L1 to L2
+
+    origin rpy = +86.9 deg around +Y while axis is -Y:
+    effective absolute boom-L1 angle = 86.9 deg - boom_swing
+  -->
+  <link name="boom_link">
+    <visual>
+      <origin xyz="0.175 0 0" rpy="0 0 0" />
+      <geometry>
+        <box size="0.35 0.06 0.06" />
+      </geometry>
+      <material name="yellow" />
+    </visual>
+    <visual>
+      <origin xyz="0.55839751122943 0 -0.215801936598831" rpy="0 0.8028514559173916 0" />
+      <geometry>
+        <box size="0.60 0.05 0.05" />
+      </geometry>
+      <material name="yellow" />
+    </visual>
+    <collision>
+      <origin xyz="0.175 0 0" rpy="0 0 0" />
+      <geometry>
+        <box size="0.35 0.06 0.06" />
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="0.55839751122943 0 -0.215801936598831" rpy="0 0.8028514559173916 0" />
+      <geometry>
+        <box size="0.60 0.05 0.05" />
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0.46 0 -0.10" rpy="0 0 0" />
+      <mass value="1.0" />
+      <inertia ixx="0.02" ixy="0.0" ixz="0.0" iyy="0.02" iyz="0.0" izz="0.02" />
+    </inertial>
+  </link>
+
+  <joint name="boom_joint" type="revolute">
+    <origin xyz="0.25 0 0.40" rpy="0 -1.5166915236764048 0" />
+    <parent link="upper_structure_link" />
+    <child link="boom_link" />
+    <axis xyz="0 1 0" />
+    <limit lower="-0.08726646259971647" upper="0.9599310885968813" effort="50" velocity="1.5" />
+  </joint>
+
+  <!--
+    Arm joint is placed at the end of the goose-neck boom:
+    x = L1 + L2 * cos(46 deg) = 0.766795...
+    z = -L2 * sin(46 deg)     = -0.431604...
+
+    To preserve V4 semantics:
+    relative arm angle = -67.3 deg - arm_boom
+    so origin rpy = -67.3 deg and axis is -Y.
+  -->
+  <link name="arm_link">
+    <visual>
+      <origin xyz="0.22 0 0" rpy="0 0 0" />
+      <geometry>
+        <box size="0.44 0.05 0.05" />
+      </geometry>
+      <material name="light_gray" />
+    </visual>
+    <collision>
+      <origin xyz="0.22 0 0" rpy="0 0 0" />
+      <geometry>
+        <box size="0.44 0.05 0.05" />
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0.22 0 0" rpy="0 0 0" />
+      <mass value="0.6" />
+      <inertia ixx="0.01" ixy="0.0" ixz="0.0" iyy="0.01" iyz="0.0" izz="0.01" />
+    </inertial>
+  </link>
+
+  <joint name="arm_joint" type="revolute">
+    <origin xyz="0.76679502245886 0 -0.431603873197662" rpy="0 1.1746065943395084 0" />
+    <parent link="boom_link" />
+    <child link="arm_link" />
+    <axis xyz="0 1 0" />
+    <limit lower="-0.08726646259971647" upper="1.6580627893946132" effort="50" velocity="1.5" />
+  </joint>
+
+  <!--
+    Bucket relative angle from the calibrated model:
+    relative bucket angle = -75.8 deg - bucket_arm
+  -->
+  <link name="bucket_link">
+    <visual>
+      <origin xyz="0.13 0 0" rpy="0 0 0" />
+      <geometry>
+        <box size="0.26 0.08 0.04" />
+      </geometry>
+      <material name="yellow" />
+    </visual>
+    <visual>
+      <origin xyz="0.24 0 -0.015" rpy="0 0 0" />
+      <geometry>
+        <sphere radius="0.025" />
+      </geometry>
+      <material name="red" />
+    </visual>
+    <collision>
+      <origin xyz="0.13 0 0" rpy="0 0 0" />
+      <geometry>
+        <box size="0.26 0.08 0.04" />
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0.13 0 0" rpy="0 0 0" />
+      <mass value="0.3" />
+      <inertia ixx="0.005" ixy="0.0" ixz="0.0" iyy="0.005" iyz="0.0" izz="0.005" />
+    </inertial>
+  </link>
+
+  <joint name="bucket_joint" type="revolute">
+    <origin xyz="0.44 0 0" rpy="0 1.322959573823596 0" />
+    <parent link="arm_link" />
+    <child link="bucket_link" />
+    <axis xyz="0 1 0" />
+    <limit lower="-1.6580627893946132" upper="0.3490658503988659" effort="30" velocity="2.0" />
+  </joint>
+
+  <link name="bucket_tip_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <sphere radius="0.02" />
+      </geometry>
+      <material name="red" />
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="0.01" />
+      <inertia ixx="1e-5" ixy="0.0" ixz="0.0" iyy="1e-5" iyz="0.0" izz="1e-5" />
+    </inertial>
+  </link>
+
+  <joint name="bucket_tip_fixed_joint" type="fixed">
+    <origin xyz="0.26 0 0" rpy="0 0 0" />
+    <parent link="bucket_link" />
+    <child link="bucket_tip_link" />
+  </joint>
+</robot>

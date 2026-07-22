@@ -62,15 +62,16 @@ class TrajectoryAnimator3D:
             j = step.get('joint')
             
             if j == "swing_yaw":
-                # 解析回转时间到角度：CH3=3000 时，2.5s 约等于 90度 => 36度/s
-                duration = step.get('duration_s', step.get('target_val', 0))
-                
-                # 挖掘机控制约定：正时间=向右转，负时间=向左转
-                # 数学坐标系约定：向右转(顺时针)角度减小
-                delta_angle = -duration * 36.0
+                if 'duration_s' in step:
+                    # 兼容老版本：解析回转时间到角度：CH3=3000 时，2.5s 约等于 90度 => 36度/s
+                    duration = step['duration_s']
+                    delta_angle = -duration * 36.0
+                    end_val = state['swing_yaw_deg'] + delta_angle
+                else:
+                    # V11 新版本 JSON 直接给出了绝对目标角度 target_val
+                    end_val = step.get('target_val', state['swing_yaw_deg'])
                 
                 start_val = state['swing_yaw_deg']
-                end_val = start_val + delta_angle
                 
                 for i in range(1, interp_steps + 1):
                     state['swing_yaw_deg'] = start_val + (end_val - start_val) * (i / interp_steps)
@@ -102,7 +103,9 @@ class TrajectoryAnimator3D:
         ax_top.set_ylabel('Y (Left) [m]')
         ax_top.plot([0], [0], 'rX', markersize=10, label='Swing Center')
         
-        line_top, = ax_top.plot([], [], 'o-', lw=4, markersize=6, color='blue', label='Arm')
+        line_boom_top, = ax_top.plot([], [], 'o-', lw=4, markersize=6, color='#1f77b4', label='Boom')
+        line_arm_top, = ax_top.plot([], [], 'o-', lw=4, markersize=6, color='#2ca02c', label='Arm')
+        line_bucket_top, = ax_top.plot([], [], 'o-', lw=4, markersize=6, color='#ff7f0e', label='Bucket')
         traj_top, = ax_top.plot([], [], 'r-', lw=1.5, alpha=0.6, label='Bucket Tip')
         ax_top.legend(loc='upper left')
         
@@ -117,18 +120,24 @@ class TrajectoryAnimator3D:
         ax_side.axhline(0, color='brown', linestyle='--', label='Ground Level')
         ax_side.plot([0], [0], 'rX', markersize=10, label='Swing Center')
         
-        line_side, = ax_side.plot([], [], 'o-', lw=4, markersize=6, color='green', label='Arm Profile')
+        line_boom_side, = ax_side.plot([], [], 'o-', lw=4, markersize=6, color='#1f77b4', label='Boom')
+        line_arm_side, = ax_side.plot([], [], 'o-', lw=4, markersize=6, color='#2ca02c', label='Arm')
+        line_bucket_side, = ax_side.plot([], [], 'o-', lw=4, markersize=6, color='#ff7f0e', label='Bucket')
         traj_side, = ax_side.plot([], [], 'r-', lw=1.5, alpha=0.6, label='Bucket Tip')
         ax_side.legend(loc='upper left')
         
         trajectory_x, trajectory_y, trajectory_z, trajectory_d = [], [], [], []
 
         def init():
-            line_top.set_data([], [])
+            line_boom_top.set_data([], [])
+            line_arm_top.set_data([], [])
+            line_bucket_top.set_data([], [])
             traj_top.set_data([], [])
-            line_side.set_data([], [])
+            line_boom_side.set_data([], [])
+            line_arm_side.set_data([], [])
+            line_bucket_side.set_data([], [])
             traj_side.set_data([], [])
-            return line_top, traj_top, line_side, traj_side
+            return line_boom_top, line_arm_top, line_bucket_top, traj_top, line_boom_side, line_arm_side, line_bucket_side, traj_side
 
         def update(frame_state):
             pts = self.fk_3d(frame_state['boom_swing'], frame_state['arm_boom'], frame_state['bucket_arm'], frame_state['swing_yaw_deg'])
@@ -144,26 +153,40 @@ class TrajectoryAnimator3D:
             # 这里简单起见，侧视图直接展示沿着当前悬臂方向的切面展开
             
             # 更新俯视图
-            line_top.set_data(xs, ys)
+            line_boom_top.set_data(xs[0:3], ys[0:3])
+            line_arm_top.set_data(xs[2:4], ys[2:4])
+            line_bucket_top.set_data(xs[3:5], ys[3:5])
+            
             trajectory_x.append(xs[-1])
             trajectory_y.append(ys[-1])
             traj_top.set_data(trajectory_x, trajectory_y)
             
             # 更新侧视图
-            # 为了侧视图物理上总是合理的，我们把大臂旋转到统一的平面
-            # 实际上直接使用最初计算出来的未经 Yaw 旋转的 2D 坐标是最完美的切面图
-            # 但既然我们已经算出了 3D，可以把 3D 旋转回去得到切面
-            # 其实我们可以直接调用一次 2D fk
-            # 简单起见，我们重新算一下 ds，保证正负号逻辑
-            sign = 1 if frame_state['swing_yaw_deg'] > -90 and frame_state['swing_yaw_deg'] < 90 else -1
-            ds_signed = [math.hypot(p[0], p[1]) * (1 if p[0] >= 0 else -1) for p in pts]
+            # 侧视图只关心挖掘机大臂向前伸展的“水平距离”和“高度Z”
+            # 因为挖掘机回转时，大臂始终在它自身的对称面上，所以在侧切面图中，我们应该直接使用
+            # 原始正向动力学计算出的 2D X 坐标。
+            # 直接使用 math.hypot() 会丢失基座偏移(offset_x)的相对关系。
+            # 我们重新调用一次 2D fk_2d 获取绝对正确的前伸距离 (全部为正向)
+            res_2d = self.kin.forward_kinematics_v4(frame_state['boom_swing'], frame_state['arm_boom'], frame_state['bucket_arm'])
+            pts_2d_only = [
+                (self.kin.offset_x, self.kin.offset_z),
+                res_2d['boom_bend'],
+                res_2d['boom_tip'],
+                res_2d['arm_tip'],
+                res_2d['bucket_tip']
+            ]
             
-            line_side.set_data(ds_signed, zs)
+            ds_signed = [p[0] for p in pts_2d_only]
+            
+            line_boom_side.set_data(ds_signed[0:3], zs[0:3])
+            line_arm_side.set_data(ds_signed[2:4], zs[2:4])
+            line_bucket_side.set_data(ds_signed[3:5], zs[3:5])
+            
             trajectory_d.append(ds_signed[-1])
             trajectory_z.append(zs[-1])
             traj_side.set_data(trajectory_d, trajectory_z)
             
-            return line_top, traj_top, line_side, traj_side
+            return line_boom_top, line_arm_top, line_bucket_top, traj_top, line_boom_side, line_arm_side, line_bucket_side, traj_side
 
         ani = animation.FuncAnimation(
             fig, update, frames=frames_data,

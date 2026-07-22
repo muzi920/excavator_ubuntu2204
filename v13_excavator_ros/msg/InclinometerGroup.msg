@@ -1,0 +1,9 @@
+std_msgs/Header header
+bool initialized
+float64 bucket_pitch_deg
+float64 arm_pitch_deg
+float64 boom_pitch_deg
+float64 swing_pitch_deg
+float64 bucket_arm_deg
+float64 arm_boom_deg
+float64 boom_swing_deg
