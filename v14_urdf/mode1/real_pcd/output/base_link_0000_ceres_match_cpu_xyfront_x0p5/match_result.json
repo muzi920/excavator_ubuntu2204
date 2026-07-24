@@ -1,0 +1,49 @@
+{
+  "source_pcd": "/media/libo/libo_sn7100/ubuntu2204/shandong_ws/src/shandong/v14_urdf/mode1/pcd/pointcloud_base_link_0000_1779956573453812592.pcd",
+  "heap_roi_points": 572,
+  "heap_roi_downsampled": 228,
+  "workspace_template_points": 36160,
+  "workspace_template_downsampled": 13834,
+  "matched_workspace_points": 13834,
+  "operable_region_points": 204,
+  "operable_region_points_3d": 92,
+  "voxel_size": 0.05,
+  "icp_max_corr_dist": 0.2,
+  "operable_max_dist": 0.3,
+  "operable_xy_max_dist": 0.12,
+  "translation_init": [
+    1.3560622930526733,
+    0.05837508663535118,
+    -0.05659555643796921
+  ],
+  "rotation": [
+    [
+      0.9995309710502625,
+      -0.0012318522203713655,
+      0.030592137947678566
+    ],
+    [
+      0.0008878188673406839,
+      0.9999362230300903,
+      0.011257043108344078
+    ],
+    [
+      -0.030604049563407898,
+      -0.01122460700571537,
+      0.9994685649871826
+    ]
+  ],
+  "translation": [
+    -0.013999836519360542,
+    0.003502585692331195,
+    0.042725373059511185
+  ],
+  "rmse": 0.13880166847026557,
+  "matched_count": 1090,
+  "operable_xy_match_count": 204,
+  "heap_roi_pcd": "/media/libo/libo_sn7100/ubuntu2204/shandong_ws/src/shandong/v14_urdf/mode1/real_pcd/output/base_link_0000_ceres_match_cpu_xyfront_x0p5/heap_roi_points.pcd",
+  "workspace_template_pcd": "/media/libo/libo_sn7100/ubuntu2204/shandong_ws/src/shandong/v14_urdf/mode1/real_pcd/output/base_link_0000_ceres_match_cpu_xyfront_x0p5/workspace_template_points.pcd",
+  "matched_workspace_pcd": "/media/libo/libo_sn7100/ubuntu2204/shandong_ws/src/shandong/v14_urdf/mode1/real_pcd/output/base_link_0000_ceres_match_cpu_xyfront_x0p5/matched_workspace_points.pcd",
+  "operable_region_pcd": "/media/libo/libo_sn7100/ubuntu2204/shandong_ws/src/shandong/v14_urdf/mode1/real_pcd/output/base_link_0000_ceres_match_cpu_xyfront_x0p5/operable_region_points.pcd",
+  "fused_pcd": "/media/libo/libo_sn7100/ubuntu2204/shandong_ws/src/shandong/v14_urdf/mode1/real_pcd/output/base_link_0000_ceres_match_cpu_xyfront_x0p5/fused_scene_matched_workspace_rgb.pcd"
+}

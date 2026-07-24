@@ -27,6 +27,7 @@ class RosJointBridge:
         self._last_joint_state = None
         self._last_joint_state_ts = 0.0
         self._cmd_initialized = False
+        self._closing = threading.Event()
         self._cmd_deg = {
             "swing_yaw": 0.0,
             "boom_swing": 0.0,
@@ -47,7 +48,7 @@ class RosJointBridge:
 
     def _spin(self):
         try:
-            while self._rclpy.ok():
+            while self._rclpy.ok() and not self._closing.is_set():
                 self._rclpy.spin_once(self._node, timeout_sec=0.05)
         except Exception:
             # 关闭或外部中断时，rclpy 可能抛出 shutdown 相关异常；这里静默退出线程。
@@ -60,12 +61,21 @@ class RosJointBridge:
 
     def close(self):
         try:
-            self._node.destroy_node()
+            self._closing.set()
         except Exception:
             pass
         try:
             if self._rclpy.ok():
                 self._rclpy.shutdown()
+        except Exception:
+            pass
+        try:
+            if self._spin_thread.is_alive():
+                self._spin_thread.join(timeout=1.0)
+        except Exception:
+            pass
+        try:
+            self._node.destroy_node()
         except Exception:
             pass
 

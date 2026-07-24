@@ -242,6 +242,45 @@ source /opt/ros/humble/setup.bash
   可回放的挖掘到卸料轨迹
 - 已确认 ROS 2 Python 节点必须使用系统 Python，也就是 `/usr/bin/python3`
 
+### Mode1 收口结果
+
+`v14_urdf/mode1/` 在这一阶段已经完成了：
+
+- 工作区域约束采样与 JSON 导出
+- 真实点云独立处理链路
+- 工作区域三维点云生成
+- 点云辅助的候选挖掘点筛选
+- 小规模多点任务生成与 RViz 回放验证
+
+当前建议把 `mode1` 视为“阶段性收口完成”，后续继续启动时直接从固定保留资产开始，
+不要再依赖早期试验输出目录。
+
+长期保留路径如下：
+
+- 工作区域点云：
+  - `src/shandong/v14_urdf/final_assets/mode1_workspace/mode1_workspace_volume_zmax0p5.pcd`
+- 工作区域约束：
+  - `src/shandong/v14_urdf/final_assets/mode1_workspace/mode1_workspace_constraints_360_z0.json`
+
+这两份文件分别对应：
+
+- `bucket_tip_link` 在 `z <= 0.5m` 下的三维工作区域点云
+- 360° 回转采样得到的地面切片工作区域约束 JSON
+
+另外，和后续 `mode2` 设计直接相关的工作区域统计结果，包括：
+
+- 工作区域整体 `z` 取值范围
+- 每个 `z` 分层对应的 `x/y` 取值范围
+- 每个 `z` 平面对应的圆环半径范围
+- 平面圆环判定公式
+
+已经补充到：
+
+- `src/shandong/v14_urdf/mode1/README.md`
+
+后续如果你要基于高度层做人工点选、多点连续挖掘、或 `mode2` 区域几何设计，建议直接
+查看 `mode1/README.md` 中的“工作区域 z 范围与平面圆环”章节。
+
 ## 单点逆解与轨迹生成
 
 当前目录已经不只是“能回放已有 JSON”，也已经具备“从单个挖掘点和卸料点生成轨迹”
@@ -484,3 +523,6 @@ source /opt/ros/humble/setup.bash
 - 新增多挖掘点任务规划器，拆分 `init_segment`、`cycle_segment` 和 `home_segment`。
 - 将初始化与归位彻底从循环中剥离，只在任务开始和结束时执行一次。
 - 为多点循环增加“循环内部过渡位”，避免每轮重复回到初始姿态。
+- 将多点规划按模式拆分到独立目录：
+  - `multi_dig/README.md`：[多点规划 TODO](file:///media/libo/libo_sn7100/ubuntu2204/shandong_ws/src/shandong/v14_urdf/multi_dig/README.md)
+  - `mode1/README.md`：[模式 1 设计](file:///media/libo/libo_sn7100/ubuntu2204/shandong_ws/src/shandong/v14_urdf/mode1/README.md)

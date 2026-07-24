@@ -1,0 +1,28 @@
+{
+  "script_name": "scan_pose_highest",
+  "description": "动作规划前扫描姿态：大臂抬起、铲斗尽量抬高，用于点云滤波与土堆识别",
+  "steps": [
+    {
+      "id": 1,
+      "joint": "boom_swing",
+      "target": -5.0,
+      "duration": 2.0,
+      "description": "大臂抬起到上限附近"
+    },
+    {
+      "id": 2,
+      "joint": "arm_boom",
+      "target": 95.0,
+      "duration": 2.0,
+      "description": "小臂回收到上限附近"
+    },
+    {
+      "id": 3,
+      "joint": "bucket_arm",
+      "target": 20.0,
+      "duration": 1.5,
+      "description": "铲斗收斗到上限附近"
+    }
+  ]
+}
+

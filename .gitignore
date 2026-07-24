@@ -1,6 +1,9 @@
 __pycache__/
 *.zip
 *.pdf
+*.pcd
+*.bag
+*./output/
 
 # 忽略运行日志文件
 v4_control_closed/logs/

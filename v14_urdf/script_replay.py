@@ -6,9 +6,32 @@ import time
 class JsonScriptReplayer:
     """按 v4 JSON 剧本格式顺序回放到 /joint_states。"""
 
-    def __init__(self, ros_bridge, status_callback=None):
+    def __init__(
+        self,
+        ros_bridge,
+        status_callback=None,
+        *,
+        feedback_mode=False,
+        feedback_publish_mode="interpolate",
+        tolerance_deg=1.5,
+        joint_speed_deg_s=12.0,
+        swing_speed_deg_s=30.0,
+        fps=30.0,
+        max_step_s=30.0,
+        min_step_s=0.0,
+        dwell_s=0.05,
+    ):
         self.ros_bridge = ros_bridge
         self.status_callback = status_callback
+        self.feedback_mode = bool(feedback_mode)
+        self.feedback_publish_mode = str(feedback_publish_mode)
+        self.tolerance_deg = float(tolerance_deg)
+        self.joint_speed_deg_s = float(joint_speed_deg_s)
+        self.swing_speed_deg_s = float(swing_speed_deg_s)
+        self.fps = float(fps)
+        self.max_step_s = float(max_step_s)
+        self.min_step_s = float(min_step_s)
+        self.dwell_s = float(dwell_s)
         self._stop_event = threading.Event()
         self._thread = None
         self._lock = threading.Lock()
@@ -87,6 +110,79 @@ class JsonScriptReplayer:
             duration = max(duration, 0.35)
         return duration
 
+    def _feedback_speed(self, joint_name):
+        if joint_name == "swing_yaw":
+            return self.swing_speed_deg_s
+        return self.joint_speed_deg_s
+
+    def _run_step_feedback(self, step, current_state, *, step_index, total_steps, start_time):
+        joint_name = step.get("joint")
+        if joint_name not in current_state:
+            return current_state, True, False
+
+        target = float(step.get("target_val", 0.0))
+        tolerance = float(step.get("tolerance_deg", self.tolerance_deg))
+        speed = max(float(step.get("speed_deg_s", self._feedback_speed(joint_name))), 1e-6)
+        fps = max(float(step.get("fps", self.fps)), 1e-3)
+        dt = 1.0 / fps
+        publish_mode = str(step.get("feedback_publish_mode", self.feedback_publish_mode))
+
+        elapsed = time.time() - start_time
+        remaining = 0.0
+        self._notify(
+            {
+                "state": "step",
+                "step_index": step_index,
+                "total_steps": total_steps,
+                "joint": joint_name,
+                "description": step.get("description", ""),
+                "target_val": target,
+                "duration_s": None,
+                "elapsed_s": elapsed,
+                "remaining_s": remaining,
+                "feedback_mode": True,
+                "tolerance_deg": tolerance,
+                "speed_deg_s": speed,
+            }
+        )
+
+        start = time.time()
+        reached = False
+        timed_out = False
+        while not self._stop_event.is_set():
+            state = self._get_current_state()
+            current = float(state.get(joint_name, current_state.get(joint_name, 0.0)))
+            delta = target - current
+            if abs(delta) <= tolerance:
+                reached = True
+                current_state[joint_name] = current
+                break
+
+            if publish_mode == "target":
+                self._publish_joint_value(joint_name, target)
+                current_state[joint_name] = target
+            else:
+                step_delta = max(-speed * dt, min(speed * dt, delta))
+                next_val = current + step_delta
+                self._publish_joint_value(joint_name, next_val)
+                current_state[joint_name] = next_val
+            time.sleep(dt)
+
+            if self.max_step_s > 0.0 and (time.time() - start) > self.max_step_s:
+                timed_out = True
+                current_state[joint_name] = float(self._get_current_state().get(joint_name, current_state[joint_name]))
+                break
+
+        self._publish_joint_value(joint_name, target)
+        current_state[joint_name] = float(self._get_current_state().get(joint_name, target))
+        if self.min_step_s > 0.0:
+            extra = self.min_step_s - (time.time() - start)
+            if extra > 0.0:
+                time.sleep(extra)
+        if self.dwell_s > 0.0:
+            time.sleep(self.dwell_s)
+        return current_state, reached, timed_out
+
     def _get_current_state(self):
         angles = self.ros_bridge.get_v4_angles_from_joint_states_deg()
         if angles is None:
@@ -146,40 +242,50 @@ class JsonScriptReplayer:
 
                 target = float(step.get("target_val", 0.0))
                 current = float(current_state.get(joint_name, 0.0))
-                duration = estimated_durations[index - 1]
-                fps = 30.0
-                frame_count = max(1, int(duration * fps))
-                elapsed = time.time() - start_time
-                remaining = max(
-                    0.0,
-                    sum(estimated_durations[index - 1:]) + max(0, total - index + 1) * 0.05
-                )
+                if self.feedback_mode:
+                    current_state, _, _ = self._run_step_feedback(
+                        step,
+                        current_state,
+                        step_index=index,
+                        total_steps=total,
+                        start_time=start_time,
+                    )
+                else:
+                    duration = estimated_durations[index - 1]
+                    fps = 30.0
+                    frame_count = max(1, int(duration * fps))
+                    elapsed = time.time() - start_time
+                    remaining = max(
+                        0.0,
+                        sum(estimated_durations[index - 1:]) + max(0, total - index + 1) * 0.05
+                    )
 
-                self._notify(
-                    {
-                        "state": "step",
-                        "step_index": index,
-                        "total_steps": total,
-                        "joint": joint_name,
-                        "description": step.get("description", ""),
-                        "target_val": target,
-                        "duration_s": duration,
-                        "elapsed_s": elapsed,
-                        "remaining_s": remaining,
-                    }
-                )
+                    self._notify(
+                        {
+                            "state": "step",
+                            "step_index": index,
+                            "total_steps": total,
+                            "joint": joint_name,
+                            "description": step.get("description", ""),
+                            "target_val": target,
+                            "duration_s": duration,
+                            "elapsed_s": elapsed,
+                            "remaining_s": remaining,
+                            "feedback_mode": False,
+                        }
+                    )
 
-                for frame in range(1, frame_count + 1):
-                    if self._stop_event.is_set():
-                        break
-                    ratio = frame / frame_count
-                    value = current + (target - current) * ratio
-                    self._publish_joint_value(joint_name, value)
-                    time.sleep(1.0 / fps)
+                    for frame in range(1, frame_count + 1):
+                        if self._stop_event.is_set():
+                            break
+                        ratio = frame / frame_count
+                        value = current + (target - current) * ratio
+                        self._publish_joint_value(joint_name, value)
+                        time.sleep(1.0 / fps)
 
-                current_state[joint_name] = target
-                self._publish_joint_value(joint_name, target)
-                time.sleep(0.05)
+                    current_state[joint_name] = target
+                    self._publish_joint_value(joint_name, target)
+                    time.sleep(0.05)
 
             elapsed_total = time.time() - start_time
             finished_normally = not self._stop_event.is_set()

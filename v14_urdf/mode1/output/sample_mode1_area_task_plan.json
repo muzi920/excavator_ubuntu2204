@@ -1,0 +1,4558 @@
+{
+  "metadata": {
+    "task_name": "mode1_area_sampling_demo",
+    "task_type": "mode1_multi_dig",
+    "candidate_path": null,
+    "constraints_path": "/media/libo/libo_sn7100/ubuntu2204/shandong_ws/src/shandong/v14_urdf/mode1/constraints/workspace_constraints_360_z0.json",
+    "task_config_path": "/media/libo/libo_sn7100/ubuntu2204/shandong_ws/src/shandong/v14_urdf/mode1/examples/sample_mode1_task.json",
+    "output_path": "/media/libo/libo_sn7100/ubuntu2204/shandong_ws/src/shandong/v14_urdf/mode1/output/sample_mode1_area_task_plan.json",
+    "requested_cycle_count": 29,
+    "cycle_count": 14,
+    "dig_point_source": "area_sampling",
+    "grid_source": "constraints_bins",
+    "init_pose": {
+      "swing_yaw": 0.0,
+      "boom_swing": 10.0,
+      "arm_boom": 20.0,
+      "bucket_arm": -30.0
+    },
+    "cycle_transit_pose": {
+      "boom_swing": 25.0,
+      "arm_boom": 55.0,
+      "bucket_arm": -10.0
+    },
+    "home_pose": {
+      "swing_yaw": 0.0,
+      "boom_swing": 5.0,
+      "arm_boom": 10.0,
+      "bucket_arm": -80.0
+    },
+    "dump_point": {
+      "x": -0.09587131702242406,
+      "y": -1.0958141679009201,
+      "z": 0.5,
+      "yaw_deg": -95.0,
+      "source": "task_config.dump_strategy"
+    },
+    "dig_points": [
+      {
+        "candidate_index": 1,
+        "sample_index": 642,
+        "row_index": 0,
+        "col_index": 0,
+        "x": 1.02,
+        "y": -0.12,
+        "z": 0.17,
+        "radius": 1.0270345661174214,
+        "yaw_deg": -6.7098368077569335,
+        "bin_x": 1.02,
+        "bin_y": -0.12,
+        "bin_key": [
+          17,
+          -2
+        ],
+        "local_x": -0.17999999999999994,
+        "local_y": -0.16999999999999998,
+        "source": "task_config.dig_area_rect"
+      },
+      {
+        "candidate_index": 2,
+        "sample_index": 656,
+        "row_index": 0,
+        "col_index": 1,
+        "x": 1.08,
+        "y": -0.12,
+        "z": 0.17,
+        "radius": 1.08664621657649,
+        "yaw_deg": -6.340191745909909,
+        "bin_x": 1.08,
+        "bin_y": -0.12,
+        "bin_key": [
+          18,
+          -2
+        ],
+        "local_x": -0.11999999999999988,
+        "local_y": -0.16999999999999998,
+        "source": "task_config.dig_area_rect"
+      },
+      {
+        "candidate_index": 3,
+        "sample_index": 668,
+        "row_index": 0,
+        "col_index": 2,
+        "x": 1.14,
+        "y": -0.12,
+        "z": 0.17,
+        "radius": 1.1462983904725679,
+        "yaw_deg": -6.009005957494526,
+        "bin_x": 1.14,
+        "bin_y": -0.12,
+        "bin_key": [
+          19,
+          -2
+        ],
+        "local_x": -0.06000000000000005,
+        "local_y": -0.16999999999999998,
+        "source": "task_config.dig_area_rect"
+      },
+      {
+        "candidate_index": 4,
+        "sample_index": 679,
+        "row_index": 0,
+        "col_index": 3,
+        "x": 1.2,
+        "y": -0.12,
+        "z": 0.17,
+        "radius": 1.2059850745345069,
+        "yaw_deg": -5.710593137499642,
+        "bin_x": 1.2,
+        "bin_y": -0.12,
+        "bin_key": [
+          20,
+          -2
+        ],
+        "local_x": 0.0,
+        "local_y": -0.16999999999999998,
+        "source": "task_config.dig_area_rect"
+      },
+      {
+        "candidate_index": 5,
+        "sample_index": 689,
+        "row_index": 0,
+        "col_index": 4,
+        "x": 1.26,
+        "y": -0.12,
+        "z": 0.17,
+        "radius": 1.2657013865837392,
+        "yaw_deg": -5.440332031005506,
+        "bin_x": 1.26,
+        "bin_y": -0.12,
+        "bin_key": [
+          21,
+          -2
+        ],
+        "local_x": 0.06000000000000005,
+        "local_y": -0.16999999999999998,
+        "source": "task_config.dig_area_rect"
+      },
+      {
+        "candidate_index": 6,
+        "sample_index": 699,
+        "row_index": 0,
+        "col_index": 5,
+        "x": 1.3199999999999998,
+        "y": -0.12,
+        "z": 0.17,
+        "radius": 1.325443322062471,
+        "yaw_deg": -5.194428907734807,
+        "bin_x": 1.3199999999999998,
+        "bin_y": -0.12,
+        "bin_key": [
+          22,
+          -2
+        ],
+        "local_x": 0.11999999999999988,
+        "local_y": -0.16999999999999998,
+        "source": "task_config.dig_area_rect"
+      },
+      {
+        "candidate_index": 7,
+        "sample_index": 708,
+        "row_index": 0,
+        "col_index": 6,
+        "x": 1.38,
+        "y": -0.12,
+        "z": 0.17,
+        "radius": 1.3852075656738234,
+        "yaw_deg": -4.969740728110304,
+        "bin_x": 1.38,
+        "bin_y": -0.12,
+        "bin_key": [
+          23,
+          -2
+        ],
+        "local_x": 0.17999999999999994,
+        "local_y": -0.16999999999999998,
+        "source": "task_config.dig_area_rect"
+      },
+      {
+        "candidate_index": 8,
+        "sample_index": 716,
+        "row_index": 0,
+        "col_index": 7,
+        "x": 1.44,
+        "y": -0.12,
+        "z": 0.17,
+        "radius": 1.4449913494550755,
+        "yaw_deg": -4.763641690726178,
+        "bin_x": 1.44,
+        "bin_y": -0.12,
+        "bin_key": [
+          24,
+          -2
+        ],
+        "local_x": 0.24,
+        "local_y": -0.16999999999999998,
+        "source": "task_config.dig_area_rect"
+      },
+      {
+        "candidate_index": 9,
+        "sample_index": 723,
+        "row_index": 0,
+        "col_index": 8,
+        "x": 1.5,
+        "y": -0.12,
+        "z": 0.17,
+        "radius": 1.5047923444781344,
+        "yaw_deg": -4.573921259900861,
+        "bin_x": 1.5,
+        "bin_y": -0.12,
+        "bin_key": [
+          25,
+          -2
+        ],
+        "local_x": 0.30000000000000004,
+        "local_y": -0.16999999999999998,
+        "source": "task_config.dig_area_rect"
+      },
+      {
+        "candidate_index": 10,
+        "sample_index": 728,
+        "row_index": 0,
+        "col_index": 9,
+        "x": 1.56,
+        "y": -0.12,
+        "z": 0.17,
+        "radius": 1.5646085772486358,
+        "yaw_deg": -4.398705354995531,
+        "bin_x": 1.56,
+        "bin_y": -0.12,
+        "bin_key": [
+          26,
+          -2
+        ],
+        "local_x": 0.3600000000000001,
+        "local_y": -0.16999999999999998,
+        "source": "task_config.dig_area_rect"
+      },
+      {
+        "candidate_index": 11,
+        "sample_index": 643,
+        "row_index": 1,
+        "col_index": 0,
+        "x": 1.02,
+        "y": -0.06,
+        "z": 0.17,
+        "radius": 1.0217631819555841,
+        "yaw_deg": -3.366460663429801,
+        "bin_x": 1.02,
+        "bin_y": -0.06,
+        "bin_key": [
+          17,
+          -1
+        ],
+        "local_x": -0.17999999999999994,
+        "local_y": -0.11,
+        "source": "task_config.dig_area_rect"
+      },
+      {
+        "candidate_index": 12,
+        "sample_index": 629,
+        "row_index": 1,
+        "col_index": 1,
+        "x": 0.96,
+        "y": -0.06,
+        "z": 0.17,
+        "radius": 0.9618731725128838,
+        "yaw_deg": -3.576334374997351,
+        "bin_x": 0.96,
+        "bin_y": -0.06,
+        "bin_key": [
+          16,
+          -1
+        ],
+        "local_x": -0.24,
+        "local_y": -0.11,
+        "source": "task_config.dig_area_rect"
+      },
+      {
+        "candidate_index": 13,
+        "sample_index": 614,
+        "row_index": 1,
+        "col_index": 2,
+        "x": 0.8999999999999999,
+        "y": -0.06,
+        "z": 0.17,
+        "radius": 0.9019977827023744,
+        "yaw_deg": -3.8140748342903543,
+        "bin_x": 0.8999999999999999,
+        "bin_y": -0.06,
+        "bin_key": [
+          15,
+          -1
+        ],
+        "local_x": -0.30000000000000004,
+        "local_y": -0.11,
+        "source": "task_config.dig_area_rect"
+      },
+      {
+        "candidate_index": 14,
+        "sample_index": 615,
+        "row_index": 2,
+        "col_index": 1,
+        "x": 0.8999999999999999,
+        "y": 0.06,
+        "z": 0.17,
+        "radius": 0.9019977827023744,
+        "yaw_deg": 3.8140748342903543,
+        "bin_x": 0.8999999999999999,
+        "bin_y": 0.06,
+        "bin_key": [
+          15,
+          1
+        ],
+        "local_x": -0.30000000000000004,
+        "local_y": 0.009999999999999995,
+        "source": "task_config.dig_area_rect"
+      },
+      {
+        "candidate_index": 15,
+        "sample_index": 630,
+        "row_index": 2,
+        "col_index": 2,
+        "x": 0.96,
+        "y": 0.06,
+        "z": 0.17,
+        "radius": 0.9618731725128838,
+        "yaw_deg": 3.576334374997351,
+        "bin_x": 0.96,
+        "bin_y": 0.06,
+        "bin_key": [
+          16,
+          1
+        ],
+        "local_x": -0.24,
+        "local_y": 0.009999999999999995,
+        "source": "task_config.dig_area_rect"
+      },
+      {
+        "candidate_index": 16,
+        "sample_index": 644,
+        "row_index": 2,
+        "col_index": 3,
+        "x": 1.02,
+        "y": 0.06,
+        "z": 0.17,
+        "radius": 1.0217631819555841,
+        "yaw_deg": 3.366460663429801,
+        "bin_x": 1.02,
+        "bin_y": 0.06,
+        "bin_key": [
+          17,
+          1
+        ],
+        "local_x": -0.17999999999999994,
+        "local_y": 0.009999999999999995,
+        "source": "task_config.dig_area_rect"
+      },
+      {
+        "candidate_index": 17,
+        "sample_index": 729,
+        "row_index": 3,
+        "col_index": 0,
+        "x": 1.56,
+        "y": 0.12,
+        "z": 0.17,
+        "radius": 1.5646085772486358,
+        "yaw_deg": 4.398705354995531,
+        "bin_x": 1.56,
+        "bin_y": 0.12,
+        "bin_key": [
+          26,
+          2
+        ],
+        "local_x": 0.3600000000000001,
+        "local_y": 0.06999999999999999,
+        "source": "task_config.dig_area_rect"
+      },
+      {
+        "candidate_index": 18,
+        "sample_index": 724,
+        "row_index": 3,
+        "col_index": 1,
+        "x": 1.5,
+        "y": 0.12,
+        "z": 0.17,
+        "radius": 1.5047923444781344,
+        "yaw_deg": 4.573921259900861,
+        "bin_x": 1.5,
+        "bin_y": 0.12,
+        "bin_key": [
+          25,
+          2
+        ],
+        "local_x": 0.30000000000000004,
+        "local_y": 0.06999999999999999,
+        "source": "task_config.dig_area_rect"
+      },
+      {
+        "candidate_index": 19,
+        "sample_index": 717,
+        "row_index": 3,
+        "col_index": 2,
+        "x": 1.44,
+        "y": 0.12,
+        "z": 0.17,
+        "radius": 1.4449913494550755,
+        "yaw_deg": 4.763641690726178,
+        "bin_x": 1.44,
+        "bin_y": 0.12,
+        "bin_key": [
+          24,
+          2
+        ],
+        "local_x": 0.24,
+        "local_y": 0.06999999999999999,
+        "source": "task_config.dig_area_rect"
+      },
+      {
+        "candidate_index": 20,
+        "sample_index": 709,
+        "row_index": 3,
+        "col_index": 3,
+        "x": 1.38,
+        "y": 0.12,
+        "z": 0.17,
+        "radius": 1.3852075656738234,
+        "yaw_deg": 4.969740728110304,
+        "bin_x": 1.38,
+        "bin_y": 0.12,
+        "bin_key": [
+          23,
+          2
+        ],
+        "local_x": 0.17999999999999994,
+        "local_y": 0.06999999999999999,
+        "source": "task_config.dig_area_rect"
+      },
+      {
+        "candidate_index": 21,
+        "sample_index": 700,
+        "row_index": 3,
+        "col_index": 4,
+        "x": 1.3199999999999998,
+        "y": 0.12,
+        "z": 0.17,
+        "radius": 1.325443322062471,
+        "yaw_deg": 5.194428907734807,
+        "bin_x": 1.3199999999999998,
+        "bin_y": 0.12,
+        "bin_key": [
+          22,
+          2
+        ],
+        "local_x": 0.11999999999999988,
+        "local_y": 0.06999999999999999,
+        "source": "task_config.dig_area_rect"
+      },
+      {
+        "candidate_index": 22,
+        "sample_index": 690,
+        "row_index": 3,
+        "col_index": 5,
+        "x": 1.26,
+        "y": 0.12,
+        "z": 0.17,
+        "radius": 1.2657013865837392,
+        "yaw_deg": 5.440332031005506,
+        "bin_x": 1.26,
+        "bin_y": 0.12,
+        "bin_key": [
+          21,
+          2
+        ],
+        "local_x": 0.06000000000000005,
+        "local_y": 0.06999999999999999,
+        "source": "task_config.dig_area_rect"
+      },
+      {
+        "candidate_index": 23,
+        "sample_index": 680,
+        "row_index": 3,
+        "col_index": 6,
+        "x": 1.2,
+        "y": 0.12,
+        "z": 0.17,
+        "radius": 1.2059850745345069,
+        "yaw_deg": 5.710593137499642,
+        "bin_x": 1.2,
+        "bin_y": 0.12,
+        "bin_key": [
+          20,
+          2
+        ],
+        "local_x": 0.0,
+        "local_y": 0.06999999999999999,
+        "source": "task_config.dig_area_rect"
+      },
+      {
+        "candidate_index": 24,
+        "sample_index": 669,
+        "row_index": 3,
+        "col_index": 7,
+        "x": 1.14,
+        "y": 0.12,
+        "z": 0.17,
+        "radius": 1.1462983904725679,
+        "yaw_deg": 6.009005957494526,
+        "bin_x": 1.14,
+        "bin_y": 0.12,
+        "bin_key": [
+          19,
+          2
+        ],
+        "local_x": -0.06000000000000005,
+        "local_y": 0.06999999999999999,
+        "source": "task_config.dig_area_rect"
+      },
+      {
+        "candidate_index": 25,
+        "sample_index": 657,
+        "row_index": 3,
+        "col_index": 8,
+        "x": 1.08,
+        "y": 0.12,
+        "z": 0.17,
+        "radius": 1.08664621657649,
+        "yaw_deg": 6.340191745909909,
+        "bin_x": 1.08,
+        "bin_y": 0.12,
+        "bin_key": [
+          18,
+          2
+        ],
+        "local_x": -0.11999999999999988,
+        "local_y": 0.06999999999999999,
+        "source": "task_config.dig_area_rect"
+      },
+      {
+        "candidate_index": 26,
+        "sample_index": 645,
+        "row_index": 3,
+        "col_index": 9,
+        "x": 1.02,
+        "y": 0.12,
+        "z": 0.17,
+        "radius": 1.0270345661174214,
+        "yaw_deg": 6.7098368077569335,
+        "bin_x": 1.02,
+        "bin_y": 0.12,
+        "bin_key": [
+          17,
+          2
+        ],
+        "local_x": -0.17999999999999994,
+        "local_y": 0.06999999999999999,
+        "source": "task_config.dig_area_rect"
+      },
+      {
+        "candidate_index": 27,
+        "sample_index": 600,
+        "row_index": 4,
+        "col_index": 0,
+        "x": 0.84,
+        "y": 0.24,
+        "z": 0.17,
+        "radius": 0.8736131867136622,
+        "yaw_deg": 15.945395900922854,
+        "bin_x": 0.84,
+        "bin_y": 0.24,
+        "bin_key": [
+          14,
+          4
+        ],
+        "local_x": -0.36,
+        "local_y": 0.19,
+        "source": "task_config.dig_area_rect"
+      },
+      {
+        "candidate_index": 28,
+        "sample_index": 616,
+        "row_index": 4,
+        "col_index": 1,
+        "x": 0.8999999999999999,
+        "y": 0.24,
+        "z": 0.17,
+        "radius": 0.9314504817756013,
+        "yaw_deg": 14.931417178137554,
+        "bin_x": 0.8999999999999999,
+        "bin_y": 0.24,
+        "bin_key": [
+          15,
+          4
+        ],
+        "local_x": -0.30000000000000004,
+        "local_y": 0.19,
+        "source": "task_config.dig_area_rect"
+      },
+      {
+        "candidate_index": 29,
+        "sample_index": 631,
+        "row_index": 4,
+        "col_index": 2,
+        "x": 0.96,
+        "y": 0.24,
+        "z": 0.17,
+        "radius": 0.9895453501482385,
+        "yaw_deg": 14.036243467926479,
+        "bin_x": 0.96,
+        "bin_y": 0.24,
+        "bin_key": [
+          16,
+          4
+        ],
+        "local_x": -0.24,
+        "local_y": 0.19,
+        "source": "task_config.dig_area_rect"
+      }
+    ],
+    "candidate_filter_stats": {
+      "generated_points": 31,
+      "rejected_workspace_radius": 2,
+      "rejected_workspace_yaw": 0,
+      "rejected_workspace_z": 0,
+      "rejected_constraints_bounds": 0,
+      "rejected_constraints_mask": 0,
+      "candidate_bins": 29
+    },
+    "segments": [
+      {
+        "name": "init_segment",
+        "type": "init",
+        "step_range": [
+          1,
+          4
+        ]
+      },
+      {
+        "name": "cycle_01",
+        "type": "cycle",
+        "cycle_index": 1,
+        "step_range": [
+          5,
+          18
+        ]
+      },
+      {
+        "name": "cycle_01_transit",
+        "type": "transit",
+        "cycle_index": 1,
+        "step_range": [
+          19,
+          21
+        ]
+      },
+      {
+        "name": "cycle_02",
+        "type": "cycle",
+        "cycle_index": 2,
+        "step_range": [
+          22,
+          35
+        ]
+      },
+      {
+        "name": "cycle_02_transit",
+        "type": "transit",
+        "cycle_index": 2,
+        "step_range": [
+          36,
+          38
+        ]
+      },
+      {
+        "name": "cycle_03",
+        "type": "cycle",
+        "cycle_index": 3,
+        "step_range": [
+          39,
+          52
+        ]
+      },
+      {
+        "name": "cycle_03_transit",
+        "type": "transit",
+        "cycle_index": 3,
+        "step_range": [
+          53,
+          55
+        ]
+      },
+      {
+        "name": "cycle_04",
+        "type": "cycle",
+        "cycle_index": 4,
+        "step_range": [
+          56,
+          69
+        ]
+      },
+      {
+        "name": "cycle_04_transit",
+        "type": "transit",
+        "cycle_index": 4,
+        "step_range": [
+          70,
+          72
+        ]
+      },
+      {
+        "name": "cycle_05",
+        "type": "cycle",
+        "cycle_index": 5,
+        "step_range": [
+          73,
+          86
+        ]
+      },
+      {
+        "name": "cycle_05_transit",
+        "type": "transit",
+        "cycle_index": 5,
+        "step_range": [
+          87,
+          89
+        ]
+      },
+      {
+        "name": "cycle_06",
+        "type": "cycle",
+        "cycle_index": 6,
+        "step_range": [
+          90,
+          103
+        ]
+      },
+      {
+        "name": "cycle_06_transit",
+        "type": "transit",
+        "cycle_index": 6,
+        "step_range": [
+          104,
+          106
+        ]
+      },
+      {
+        "name": "cycle_07",
+        "type": "cycle",
+        "cycle_index": 7,
+        "step_range": [
+          107,
+          120
+        ]
+      },
+      {
+        "name": "cycle_07_transit",
+        "type": "transit",
+        "cycle_index": 7,
+        "step_range": [
+          121,
+          123
+        ]
+      },
+      {
+        "name": "cycle_08",
+        "type": "cycle",
+        "cycle_index": 8,
+        "step_range": [
+          124,
+          137
+        ]
+      },
+      {
+        "name": "cycle_08_transit",
+        "type": "transit",
+        "cycle_index": 8,
+        "step_range": [
+          138,
+          140
+        ]
+      },
+      {
+        "name": "cycle_09",
+        "type": "cycle",
+        "cycle_index": 9,
+        "step_range": [
+          141,
+          154
+        ]
+      },
+      {
+        "name": "cycle_09_transit",
+        "type": "transit",
+        "cycle_index": 9,
+        "step_range": [
+          155,
+          157
+        ]
+      },
+      {
+        "name": "cycle_10",
+        "type": "cycle",
+        "cycle_index": 10,
+        "step_range": [
+          158,
+          171
+        ]
+      },
+      {
+        "name": "cycle_10_transit",
+        "type": "transit",
+        "cycle_index": 10,
+        "step_range": [
+          172,
+          174
+        ]
+      },
+      {
+        "name": "cycle_11",
+        "type": "cycle",
+        "cycle_index": 11,
+        "step_range": [
+          175,
+          188
+        ]
+      },
+      {
+        "name": "cycle_11_transit",
+        "type": "transit",
+        "cycle_index": 11,
+        "step_range": [
+          189,
+          191
+        ]
+      },
+      {
+        "name": "cycle_12",
+        "type": "cycle",
+        "cycle_index": 12,
+        "step_range": [
+          192,
+          205
+        ]
+      },
+      {
+        "name": "cycle_12_transit",
+        "type": "transit",
+        "cycle_index": 12,
+        "step_range": [
+          206,
+          208
+        ]
+      },
+      {
+        "name": "cycle_13",
+        "type": "cycle",
+        "cycle_index": 13,
+        "step_range": [
+          209,
+          222
+        ]
+      },
+      {
+        "name": "cycle_13_transit",
+        "type": "transit",
+        "cycle_index": 13,
+        "step_range": [
+          223,
+          225
+        ]
+      },
+      {
+        "name": "cycle_14",
+        "type": "cycle",
+        "cycle_index": 14,
+        "step_range": [
+          226,
+          239
+        ]
+      },
+      {
+        "name": "cycle_14_transit",
+        "type": "transit",
+        "cycle_index": 14,
+        "step_range": [
+          240,
+          242
+        ]
+      },
+      {
+        "name": "home_segment",
+        "type": "home",
+        "step_range": [
+          243,
+          246
+        ]
+      }
+    ],
+    "cycles": [
+      {
+        "cycle_index": 1,
+        "candidate_index": 4,
+        "step_range": [
+          5,
+          18
+        ],
+        "dig_point": {
+          "x": 1.2,
+          "y": -0.12,
+          "z": 0.17,
+          "radius": 1.2059850745345069,
+          "swing_yaw": -5.710593137499642,
+          "bin_x": 1.2,
+          "bin_y": -0.12,
+          "bin_key": [
+            20,
+            -2
+          ],
+          "source": "task_config.dig_area_rect"
+        },
+        "requested_cycle_index": 4
+      },
+      {
+        "cycle_index": 2,
+        "candidate_index": 5,
+        "step_range": [
+          22,
+          35
+        ],
+        "dig_point": {
+          "x": 1.26,
+          "y": -0.12,
+          "z": 0.17,
+          "radius": 1.2657013865837392,
+          "swing_yaw": -5.440332031005506,
+          "bin_x": 1.26,
+          "bin_y": -0.12,
+          "bin_key": [
+            21,
+            -2
+          ],
+          "source": "task_config.dig_area_rect"
+        },
+        "requested_cycle_index": 5
+      },
+      {
+        "cycle_index": 3,
+        "candidate_index": 6,
+        "step_range": [
+          39,
+          52
+        ],
+        "dig_point": {
+          "x": 1.3199999999999998,
+          "y": -0.12,
+          "z": 0.17,
+          "radius": 1.325443322062471,
+          "swing_yaw": -5.194428907734807,
+          "bin_x": 1.3199999999999998,
+          "bin_y": -0.12,
+          "bin_key": [
+            22,
+            -2
+          ],
+          "source": "task_config.dig_area_rect"
+        },
+        "requested_cycle_index": 6
+      },
+      {
+        "cycle_index": 4,
+        "candidate_index": 7,
+        "step_range": [
+          56,
+          69
+        ],
+        "dig_point": {
+          "x": 1.38,
+          "y": -0.12,
+          "z": 0.17,
+          "radius": 1.3852075656738234,
+          "swing_yaw": -4.969740728110304,
+          "bin_x": 1.38,
+          "bin_y": -0.12,
+          "bin_key": [
+            23,
+            -2
+          ],
+          "source": "task_config.dig_area_rect"
+        },
+        "requested_cycle_index": 7
+      },
+      {
+        "cycle_index": 5,
+        "candidate_index": 8,
+        "step_range": [
+          73,
+          86
+        ],
+        "dig_point": {
+          "x": 1.44,
+          "y": -0.12,
+          "z": 0.17,
+          "radius": 1.4449913494550755,
+          "swing_yaw": -4.763641690726178,
+          "bin_x": 1.44,
+          "bin_y": -0.12,
+          "bin_key": [
+            24,
+            -2
+          ],
+          "source": "task_config.dig_area_rect"
+        },
+        "requested_cycle_index": 8
+      },
+      {
+        "cycle_index": 6,
+        "candidate_index": 9,
+        "step_range": [
+          90,
+          103
+        ],
+        "dig_point": {
+          "x": 1.5,
+          "y": -0.12,
+          "z": 0.17,
+          "radius": 1.5047923444781344,
+          "swing_yaw": -4.573921259900861,
+          "bin_x": 1.5,
+          "bin_y": -0.12,
+          "bin_key": [
+            25,
+            -2
+          ],
+          "source": "task_config.dig_area_rect"
+        },
+        "requested_cycle_index": 9
+      },
+      {
+        "cycle_index": 7,
+        "candidate_index": 10,
+        "step_range": [
+          107,
+          120
+        ],
+        "dig_point": {
+          "x": 1.56,
+          "y": -0.12,
+          "z": 0.17,
+          "radius": 1.5646085772486358,
+          "swing_yaw": -4.398705354995531,
+          "bin_x": 1.56,
+          "bin_y": -0.12,
+          "bin_key": [
+            26,
+            -2
+          ],
+          "source": "task_config.dig_area_rect"
+        },
+        "requested_cycle_index": 10
+      },
+      {
+        "cycle_index": 8,
+        "candidate_index": 17,
+        "step_range": [
+          124,
+          137
+        ],
+        "dig_point": {
+          "x": 1.56,
+          "y": 0.12,
+          "z": 0.17,
+          "radius": 1.5646085772486358,
+          "swing_yaw": 4.398705354995531,
+          "bin_x": 1.56,
+          "bin_y": 0.12,
+          "bin_key": [
+            26,
+            2
+          ],
+          "source": "task_config.dig_area_rect"
+        },
+        "requested_cycle_index": 17
+      },
+      {
+        "cycle_index": 9,
+        "candidate_index": 18,
+        "step_range": [
+          141,
+          154
+        ],
+        "dig_point": {
+          "x": 1.5,
+          "y": 0.12,
+          "z": 0.17,
+          "radius": 1.5047923444781344,
+          "swing_yaw": 4.573921259900861,
+          "bin_x": 1.5,
+          "bin_y": 0.12,
+          "bin_key": [
+            25,
+            2
+          ],
+          "source": "task_config.dig_area_rect"
+        },
+        "requested_cycle_index": 18
+      },
+      {
+        "cycle_index": 10,
+        "candidate_index": 19,
+        "step_range": [
+          158,
+          171
+        ],
+        "dig_point": {
+          "x": 1.44,
+          "y": 0.12,
+          "z": 0.17,
+          "radius": 1.4449913494550755,
+          "swing_yaw": 4.763641690726178,
+          "bin_x": 1.44,
+          "bin_y": 0.12,
+          "bin_key": [
+            24,
+            2
+          ],
+          "source": "task_config.dig_area_rect"
+        },
+        "requested_cycle_index": 19
+      },
+      {
+        "cycle_index": 11,
+        "candidate_index": 20,
+        "step_range": [
+          175,
+          188
+        ],
+        "dig_point": {
+          "x": 1.38,
+          "y": 0.12,
+          "z": 0.17,
+          "radius": 1.3852075656738234,
+          "swing_yaw": 4.969740728110304,
+          "bin_x": 1.38,
+          "bin_y": 0.12,
+          "bin_key": [
+            23,
+            2
+          ],
+          "source": "task_config.dig_area_rect"
+        },
+        "requested_cycle_index": 20
+      },
+      {
+        "cycle_index": 12,
+        "candidate_index": 21,
+        "step_range": [
+          192,
+          205
+        ],
+        "dig_point": {
+          "x": 1.3199999999999998,
+          "y": 0.12,
+          "z": 0.17,
+          "radius": 1.325443322062471,
+          "swing_yaw": 5.194428907734807,
+          "bin_x": 1.3199999999999998,
+          "bin_y": 0.12,
+          "bin_key": [
+            22,
+            2
+          ],
+          "source": "task_config.dig_area_rect"
+        },
+        "requested_cycle_index": 21
+      },
+      {
+        "cycle_index": 13,
+        "candidate_index": 22,
+        "step_range": [
+          209,
+          222
+        ],
+        "dig_point": {
+          "x": 1.26,
+          "y": 0.12,
+          "z": 0.17,
+          "radius": 1.2657013865837392,
+          "swing_yaw": 5.440332031005506,
+          "bin_x": 1.26,
+          "bin_y": 0.12,
+          "bin_key": [
+            21,
+            2
+          ],
+          "source": "task_config.dig_area_rect"
+        },
+        "requested_cycle_index": 22
+      },
+      {
+        "cycle_index": 14,
+        "candidate_index": 23,
+        "step_range": [
+          226,
+          239
+        ],
+        "dig_point": {
+          "x": 1.2,
+          "y": 0.12,
+          "z": 0.17,
+          "radius": 1.2059850745345069,
+          "swing_yaw": 5.710593137499642,
+          "bin_x": 1.2,
+          "bin_y": 0.12,
+          "bin_key": [
+            20,
+            2
+          ],
+          "source": "task_config.dig_area_rect"
+        },
+        "requested_cycle_index": 23
+      }
+    ],
+    "skipped_candidates": [
+      {
+        "requested_cycle_index": 1,
+        "candidate_index": 1,
+        "dig_point": {
+          "candidate_index": 1,
+          "sample_index": 642,
+          "row_index": 0,
+          "col_index": 0,
+          "x": 1.02,
+          "y": -0.12,
+          "z": 0.17,
+          "radius": 1.0270345661174214,
+          "yaw_deg": -6.7098368077569335,
+          "bin_x": 1.02,
+          "bin_y": -0.12,
+          "bin_key": [
+            17,
+            -2
+          ],
+          "local_x": -0.17999999999999994,
+          "local_y": -0.16999999999999998,
+          "source": "task_config.dig_area_rect"
+        },
+        "reason": "挖掘点在当前限位和姿态搜索范围内无可行解。"
+      },
+      {
+        "requested_cycle_index": 2,
+        "candidate_index": 2,
+        "dig_point": {
+          "candidate_index": 2,
+          "sample_index": 656,
+          "row_index": 0,
+          "col_index": 1,
+          "x": 1.08,
+          "y": -0.12,
+          "z": 0.17,
+          "radius": 1.08664621657649,
+          "yaw_deg": -6.340191745909909,
+          "bin_x": 1.08,
+          "bin_y": -0.12,
+          "bin_key": [
+            18,
+            -2
+          ],
+          "local_x": -0.11999999999999988,
+          "local_y": -0.16999999999999998,
+          "source": "task_config.dig_area_rect"
+        },
+        "reason": "挖掘点在当前限位和姿态搜索范围内无可行解。"
+      },
+      {
+        "requested_cycle_index": 3,
+        "candidate_index": 3,
+        "dig_point": {
+          "candidate_index": 3,
+          "sample_index": 668,
+          "row_index": 0,
+          "col_index": 2,
+          "x": 1.14,
+          "y": -0.12,
+          "z": 0.17,
+          "radius": 1.1462983904725679,
+          "yaw_deg": -6.009005957494526,
+          "bin_x": 1.14,
+          "bin_y": -0.12,
+          "bin_key": [
+            19,
+            -2
+          ],
+          "local_x": -0.06000000000000005,
+          "local_y": -0.16999999999999998,
+          "source": "task_config.dig_area_rect"
+        },
+        "reason": "挖掘点在当前限位和姿态搜索范围内无可行解。"
+      },
+      {
+        "requested_cycle_index": 11,
+        "candidate_index": 11,
+        "dig_point": {
+          "candidate_index": 11,
+          "sample_index": 643,
+          "row_index": 1,
+          "col_index": 0,
+          "x": 1.02,
+          "y": -0.06,
+          "z": 0.17,
+          "radius": 1.0217631819555841,
+          "yaw_deg": -3.366460663429801,
+          "bin_x": 1.02,
+          "bin_y": -0.06,
+          "bin_key": [
+            17,
+            -1
+          ],
+          "local_x": -0.17999999999999994,
+          "local_y": -0.11,
+          "source": "task_config.dig_area_rect"
+        },
+        "reason": "挖掘点在当前限位和姿态搜索范围内无可行解。"
+      },
+      {
+        "requested_cycle_index": 12,
+        "candidate_index": 12,
+        "dig_point": {
+          "candidate_index": 12,
+          "sample_index": 629,
+          "row_index": 1,
+          "col_index": 1,
+          "x": 0.96,
+          "y": -0.06,
+          "z": 0.17,
+          "radius": 0.9618731725128838,
+          "yaw_deg": -3.576334374997351,
+          "bin_x": 0.96,
+          "bin_y": -0.06,
+          "bin_key": [
+            16,
+            -1
+          ],
+          "local_x": -0.24,
+          "local_y": -0.11,
+          "source": "task_config.dig_area_rect"
+        },
+        "reason": "挖掘点在当前限位和姿态搜索范围内无可行解。"
+      },
+      {
+        "requested_cycle_index": 13,
+        "candidate_index": 13,
+        "dig_point": {
+          "candidate_index": 13,
+          "sample_index": 614,
+          "row_index": 1,
+          "col_index": 2,
+          "x": 0.8999999999999999,
+          "y": -0.06,
+          "z": 0.17,
+          "radius": 0.9019977827023744,
+          "yaw_deg": -3.8140748342903543,
+          "bin_x": 0.8999999999999999,
+          "bin_y": -0.06,
+          "bin_key": [
+            15,
+            -1
+          ],
+          "local_x": -0.30000000000000004,
+          "local_y": -0.11,
+          "source": "task_config.dig_area_rect"
+        },
+        "reason": "挖掘点在当前限位和姿态搜索范围内无可行解。"
+      },
+      {
+        "requested_cycle_index": 14,
+        "candidate_index": 14,
+        "dig_point": {
+          "candidate_index": 14,
+          "sample_index": 615,
+          "row_index": 2,
+          "col_index": 1,
+          "x": 0.8999999999999999,
+          "y": 0.06,
+          "z": 0.17,
+          "radius": 0.9019977827023744,
+          "yaw_deg": 3.8140748342903543,
+          "bin_x": 0.8999999999999999,
+          "bin_y": 0.06,
+          "bin_key": [
+            15,
+            1
+          ],
+          "local_x": -0.30000000000000004,
+          "local_y": 0.009999999999999995,
+          "source": "task_config.dig_area_rect"
+        },
+        "reason": "挖掘点在当前限位和姿态搜索范围内无可行解。"
+      },
+      {
+        "requested_cycle_index": 15,
+        "candidate_index": 15,
+        "dig_point": {
+          "candidate_index": 15,
+          "sample_index": 630,
+          "row_index": 2,
+          "col_index": 2,
+          "x": 0.96,
+          "y": 0.06,
+          "z": 0.17,
+          "radius": 0.9618731725128838,
+          "yaw_deg": 3.576334374997351,
+          "bin_x": 0.96,
+          "bin_y": 0.06,
+          "bin_key": [
+            16,
+            1
+          ],
+          "local_x": -0.24,
+          "local_y": 0.009999999999999995,
+          "source": "task_config.dig_area_rect"
+        },
+        "reason": "挖掘点在当前限位和姿态搜索范围内无可行解。"
+      },
+      {
+        "requested_cycle_index": 16,
+        "candidate_index": 16,
+        "dig_point": {
+          "candidate_index": 16,
+          "sample_index": 644,
+          "row_index": 2,
+          "col_index": 3,
+          "x": 1.02,
+          "y": 0.06,
+          "z": 0.17,
+          "radius": 1.0217631819555841,
+          "yaw_deg": 3.366460663429801,
+          "bin_x": 1.02,
+          "bin_y": 0.06,
+          "bin_key": [
+            17,
+            1
+          ],
+          "local_x": -0.17999999999999994,
+          "local_y": 0.009999999999999995,
+          "source": "task_config.dig_area_rect"
+        },
+        "reason": "挖掘点在当前限位和姿态搜索范围内无可行解。"
+      },
+      {
+        "requested_cycle_index": 24,
+        "candidate_index": 24,
+        "dig_point": {
+          "candidate_index": 24,
+          "sample_index": 669,
+          "row_index": 3,
+          "col_index": 7,
+          "x": 1.14,
+          "y": 0.12,
+          "z": 0.17,
+          "radius": 1.1462983904725679,
+          "yaw_deg": 6.009005957494526,
+          "bin_x": 1.14,
+          "bin_y": 0.12,
+          "bin_key": [
+            19,
+            2
+          ],
+          "local_x": -0.06000000000000005,
+          "local_y": 0.06999999999999999,
+          "source": "task_config.dig_area_rect"
+        },
+        "reason": "挖掘点在当前限位和姿态搜索范围内无可行解。"
+      },
+      {
+        "requested_cycle_index": 25,
+        "candidate_index": 25,
+        "dig_point": {
+          "candidate_index": 25,
+          "sample_index": 657,
+          "row_index": 3,
+          "col_index": 8,
+          "x": 1.08,
+          "y": 0.12,
+          "z": 0.17,
+          "radius": 1.08664621657649,
+          "yaw_deg": 6.340191745909909,
+          "bin_x": 1.08,
+          "bin_y": 0.12,
+          "bin_key": [
+            18,
+            2
+          ],
+          "local_x": -0.11999999999999988,
+          "local_y": 0.06999999999999999,
+          "source": "task_config.dig_area_rect"
+        },
+        "reason": "挖掘点在当前限位和姿态搜索范围内无可行解。"
+      },
+      {
+        "requested_cycle_index": 26,
+        "candidate_index": 26,
+        "dig_point": {
+          "candidate_index": 26,
+          "sample_index": 645,
+          "row_index": 3,
+          "col_index": 9,
+          "x": 1.02,
+          "y": 0.12,
+          "z": 0.17,
+          "radius": 1.0270345661174214,
+          "yaw_deg": 6.7098368077569335,
+          "bin_x": 1.02,
+          "bin_y": 0.12,
+          "bin_key": [
+            17,
+            2
+          ],
+          "local_x": -0.17999999999999994,
+          "local_y": 0.06999999999999999,
+          "source": "task_config.dig_area_rect"
+        },
+        "reason": "挖掘点在当前限位和姿态搜索范围内无可行解。"
+      },
+      {
+        "requested_cycle_index": 27,
+        "candidate_index": 27,
+        "dig_point": {
+          "candidate_index": 27,
+          "sample_index": 600,
+          "row_index": 4,
+          "col_index": 0,
+          "x": 0.84,
+          "y": 0.24,
+          "z": 0.17,
+          "radius": 0.8736131867136622,
+          "yaw_deg": 15.945395900922854,
+          "bin_x": 0.84,
+          "bin_y": 0.24,
+          "bin_key": [
+            14,
+            4
+          ],
+          "local_x": -0.36,
+          "local_y": 0.19,
+          "source": "task_config.dig_area_rect"
+        },
+        "reason": "挖掘点在当前限位和姿态搜索范围内无可行解。"
+      },
+      {
+        "requested_cycle_index": 28,
+        "candidate_index": 28,
+        "dig_point": {
+          "candidate_index": 28,
+          "sample_index": 616,
+          "row_index": 4,
+          "col_index": 1,
+          "x": 0.8999999999999999,
+          "y": 0.24,
+          "z": 0.17,
+          "radius": 0.9314504817756013,
+          "yaw_deg": 14.931417178137554,
+          "bin_x": 0.8999999999999999,
+          "bin_y": 0.24,
+          "bin_key": [
+            15,
+            4
+          ],
+          "local_x": -0.30000000000000004,
+          "local_y": 0.19,
+          "source": "task_config.dig_area_rect"
+        },
+        "reason": "挖掘点在当前限位和姿态搜索范围内无可行解。"
+      },
+      {
+        "requested_cycle_index": 29,
+        "candidate_index": 29,
+        "dig_point": {
+          "candidate_index": 29,
+          "sample_index": 631,
+          "row_index": 4,
+          "col_index": 2,
+          "x": 0.96,
+          "y": 0.24,
+          "z": 0.17,
+          "radius": 0.9895453501482385,
+          "yaw_deg": 14.036243467926479,
+          "bin_x": 0.96,
+          "bin_y": 0.24,
+          "bin_key": [
+            16,
+            4
+          ],
+          "local_x": -0.24,
+          "local_y": 0.19,
+          "source": "task_config.dig_area_rect"
+        },
+        "reason": "挖掘点在当前限位和姿态搜索范围内无可行解。"
+      }
+    ]
+  },
+  "script": [
+    {
+      "step": 1,
+      "joint": "swing_yaw",
+      "description": "初始化-回转",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 0.0,
+      "is_init_step": true,
+      "segment_name": "init_segment"
+    },
+    {
+      "step": 2,
+      "joint": "boom_swing",
+      "description": "初始化-大臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 10.0,
+      "is_init_step": true,
+      "segment_name": "init_segment"
+    },
+    {
+      "step": 3,
+      "joint": "arm_boom",
+      "description": "初始化-小臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 20.0,
+      "is_init_step": true,
+      "segment_name": "init_segment"
+    },
+    {
+      "step": 4,
+      "joint": "bucket_arm",
+      "description": "初始化-铲斗",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -30.0,
+      "is_init_step": true,
+      "segment_name": "init_segment"
+    },
+    {
+      "step": 5,
+      "joint": "swing_yaw",
+      "description": "[循环01] 对准挖掘点（回转）",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -5.71,
+      "cycle_index": 1
+    },
+    {
+      "step": 6,
+      "joint": "bucket_arm",
+      "description": "[循环01] 挖掘预备-半开斗",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -55.0,
+      "cycle_index": 1
+    },
+    {
+      "step": 7,
+      "joint": "boom_swing",
+      "description": "[循环01] 挖掘预备-大臂下探",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 35.37,
+      "cycle_index": 1
+    },
+    {
+      "step": 8,
+      "joint": "arm_boom",
+      "description": "[循环01] 挖掘预备-小臂下探",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 85.25,
+      "cycle_index": 1
+    },
+    {
+      "step": 9,
+      "joint": "bucket_arm",
+      "description": "[循环01] 收斗取料",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 0.0,
+      "cycle_index": 1
+    },
+    {
+      "step": 10,
+      "joint": "arm_boom",
+      "description": "[循环01] 回拉小臂抬料",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 85.25,
+      "cycle_index": 1
+    },
+    {
+      "step": 11,
+      "joint": "boom_swing",
+      "description": "[循环01] 抬大臂离开挖掘点",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 23.37,
+      "cycle_index": 1
+    },
+    {
+      "step": 12,
+      "joint": "arm_boom",
+      "description": "[循环01] 运输姿态-收小臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 85.25,
+      "cycle_index": 1
+    },
+    {
+      "step": 13,
+      "joint": "bucket_arm",
+      "description": "[循环01] 运输姿态-稳料",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -5.0,
+      "cycle_index": 1
+    },
+    {
+      "step": 14,
+      "joint": "swing_yaw",
+      "description": "[循环01] 回转到卸料点",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -95.0,
+      "cycle_index": 1
+    },
+    {
+      "step": 15,
+      "joint": "boom_swing",
+      "description": "[循环01] 卸料预备-大臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 28.12,
+      "cycle_index": 1
+    },
+    {
+      "step": 16,
+      "joint": "arm_boom",
+      "description": "[循环01] 卸料预备-小臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 70.55,
+      "cycle_index": 1
+    },
+    {
+      "step": 17,
+      "joint": "bucket_arm",
+      "description": "[循环01] 卸料预备-铲斗半开",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -18.0,
+      "cycle_index": 1
+    },
+    {
+      "step": 18,
+      "joint": "bucket_arm",
+      "description": "[循环01] 打开铲斗卸料",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -90.0,
+      "cycle_index": 1
+    },
+    {
+      "step": 19,
+      "joint": "boom_swing",
+      "description": "循环01结束-过渡位-大臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 25.0,
+      "segment_name": "cycle_01_transit"
+    },
+    {
+      "step": 20,
+      "joint": "arm_boom",
+      "description": "循环01结束-过渡位-小臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 55.0,
+      "segment_name": "cycle_01_transit"
+    },
+    {
+      "step": 21,
+      "joint": "bucket_arm",
+      "description": "循环01结束-过渡位-铲斗",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -10.0,
+      "segment_name": "cycle_01_transit"
+    },
+    {
+      "step": 22,
+      "joint": "swing_yaw",
+      "description": "[循环02] 对准挖掘点（回转）",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -5.44,
+      "cycle_index": 2
+    },
+    {
+      "step": 23,
+      "joint": "bucket_arm",
+      "description": "[循环02] 挖掘预备-半开斗",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -55.0,
+      "cycle_index": 2
+    },
+    {
+      "step": 24,
+      "joint": "boom_swing",
+      "description": "[循环02] 挖掘预备-大臂下探",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 31.1,
+      "cycle_index": 2
+    },
+    {
+      "step": 25,
+      "joint": "arm_boom",
+      "description": "[循环02] 挖掘预备-小臂下探",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 72.78,
+      "cycle_index": 2
+    },
+    {
+      "step": 26,
+      "joint": "bucket_arm",
+      "description": "[循环02] 收斗取料",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 0.0,
+      "cycle_index": 2
+    },
+    {
+      "step": 27,
+      "joint": "arm_boom",
+      "description": "[循环02] 回拉小臂抬料",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 72.78,
+      "cycle_index": 2
+    },
+    {
+      "step": 28,
+      "joint": "boom_swing",
+      "description": "[循环02] 抬大臂离开挖掘点",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 19.1,
+      "cycle_index": 2
+    },
+    {
+      "step": 29,
+      "joint": "arm_boom",
+      "description": "[循环02] 运输姿态-收小臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 72.78,
+      "cycle_index": 2
+    },
+    {
+      "step": 30,
+      "joint": "bucket_arm",
+      "description": "[循环02] 运输姿态-稳料",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -5.0,
+      "cycle_index": 2
+    },
+    {
+      "step": 31,
+      "joint": "swing_yaw",
+      "description": "[循环02] 回转到卸料点",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -95.0,
+      "cycle_index": 2
+    },
+    {
+      "step": 32,
+      "joint": "boom_swing",
+      "description": "[循环02] 卸料预备-大臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 28.12,
+      "cycle_index": 2
+    },
+    {
+      "step": 33,
+      "joint": "arm_boom",
+      "description": "[循环02] 卸料预备-小臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 70.55,
+      "cycle_index": 2
+    },
+    {
+      "step": 34,
+      "joint": "bucket_arm",
+      "description": "[循环02] 卸料预备-铲斗半开",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -18.0,
+      "cycle_index": 2
+    },
+    {
+      "step": 35,
+      "joint": "bucket_arm",
+      "description": "[循环02] 打开铲斗卸料",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -90.0,
+      "cycle_index": 2
+    },
+    {
+      "step": 36,
+      "joint": "boom_swing",
+      "description": "循环02结束-过渡位-大臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 25.0,
+      "segment_name": "cycle_02_transit"
+    },
+    {
+      "step": 37,
+      "joint": "arm_boom",
+      "description": "循环02结束-过渡位-小臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 55.0,
+      "segment_name": "cycle_02_transit"
+    },
+    {
+      "step": 38,
+      "joint": "bucket_arm",
+      "description": "循环02结束-过渡位-铲斗",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -10.0,
+      "segment_name": "cycle_02_transit"
+    },
+    {
+      "step": 39,
+      "joint": "swing_yaw",
+      "description": "[循环03] 对准挖掘点（回转）",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -5.19,
+      "cycle_index": 3
+    },
+    {
+      "step": 40,
+      "joint": "bucket_arm",
+      "description": "[循环03] 挖掘预备-半开斗",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -55.0,
+      "cycle_index": 3
+    },
+    {
+      "step": 41,
+      "joint": "boom_swing",
+      "description": "[循环03] 挖掘预备-大臂下探",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 31.76,
+      "cycle_index": 3
+    },
+    {
+      "step": 42,
+      "joint": "arm_boom",
+      "description": "[循环03] 挖掘预备-小臂下探",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 64.82,
+      "cycle_index": 3
+    },
+    {
+      "step": 43,
+      "joint": "bucket_arm",
+      "description": "[循环03] 收斗取料",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 0.0,
+      "cycle_index": 3
+    },
+    {
+      "step": 44,
+      "joint": "arm_boom",
+      "description": "[循环03] 回拉小臂抬料",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 72.0,
+      "cycle_index": 3
+    },
+    {
+      "step": 45,
+      "joint": "boom_swing",
+      "description": "[循环03] 抬大臂离开挖掘点",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 19.76,
+      "cycle_index": 3
+    },
+    {
+      "step": 46,
+      "joint": "arm_boom",
+      "description": "[循环03] 运输姿态-收小臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 72.0,
+      "cycle_index": 3
+    },
+    {
+      "step": 47,
+      "joint": "bucket_arm",
+      "description": "[循环03] 运输姿态-稳料",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -5.0,
+      "cycle_index": 3
+    },
+    {
+      "step": 48,
+      "joint": "swing_yaw",
+      "description": "[循环03] 回转到卸料点",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -95.0,
+      "cycle_index": 3
+    },
+    {
+      "step": 49,
+      "joint": "boom_swing",
+      "description": "[循环03] 卸料预备-大臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 28.12,
+      "cycle_index": 3
+    },
+    {
+      "step": 50,
+      "joint": "arm_boom",
+      "description": "[循环03] 卸料预备-小臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 70.55,
+      "cycle_index": 3
+    },
+    {
+      "step": 51,
+      "joint": "bucket_arm",
+      "description": "[循环03] 卸料预备-铲斗半开",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -18.0,
+      "cycle_index": 3
+    },
+    {
+      "step": 52,
+      "joint": "bucket_arm",
+      "description": "[循环03] 打开铲斗卸料",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -90.0,
+      "cycle_index": 3
+    },
+    {
+      "step": 53,
+      "joint": "boom_swing",
+      "description": "循环03结束-过渡位-大臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 25.0,
+      "segment_name": "cycle_03_transit"
+    },
+    {
+      "step": 54,
+      "joint": "arm_boom",
+      "description": "循环03结束-过渡位-小臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 55.0,
+      "segment_name": "cycle_03_transit"
+    },
+    {
+      "step": 55,
+      "joint": "bucket_arm",
+      "description": "循环03结束-过渡位-铲斗",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -10.0,
+      "segment_name": "cycle_03_transit"
+    },
+    {
+      "step": 56,
+      "joint": "swing_yaw",
+      "description": "[循环04] 对准挖掘点（回转）",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -4.97,
+      "cycle_index": 4
+    },
+    {
+      "step": 57,
+      "joint": "bucket_arm",
+      "description": "[循环04] 挖掘预备-半开斗",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -55.0,
+      "cycle_index": 4
+    },
+    {
+      "step": 58,
+      "joint": "boom_swing",
+      "description": "[循环04] 挖掘预备-大臂下探",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 32.88,
+      "cycle_index": 4
+    },
+    {
+      "step": 59,
+      "joint": "arm_boom",
+      "description": "[循环04] 挖掘预备-小臂下探",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 56.57,
+      "cycle_index": 4
+    },
+    {
+      "step": 60,
+      "joint": "bucket_arm",
+      "description": "[循环04] 收斗取料",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 0.0,
+      "cycle_index": 4
+    },
+    {
+      "step": 61,
+      "joint": "arm_boom",
+      "description": "[循环04] 回拉小臂抬料",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 72.0,
+      "cycle_index": 4
+    },
+    {
+      "step": 62,
+      "joint": "boom_swing",
+      "description": "[循环04] 抬大臂离开挖掘点",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 20.88,
+      "cycle_index": 4
+    },
+    {
+      "step": 63,
+      "joint": "arm_boom",
+      "description": "[循环04] 运输姿态-收小臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 72.0,
+      "cycle_index": 4
+    },
+    {
+      "step": 64,
+      "joint": "bucket_arm",
+      "description": "[循环04] 运输姿态-稳料",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -5.0,
+      "cycle_index": 4
+    },
+    {
+      "step": 65,
+      "joint": "swing_yaw",
+      "description": "[循环04] 回转到卸料点",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -95.0,
+      "cycle_index": 4
+    },
+    {
+      "step": 66,
+      "joint": "boom_swing",
+      "description": "[循环04] 卸料预备-大臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 28.12,
+      "cycle_index": 4
+    },
+    {
+      "step": 67,
+      "joint": "arm_boom",
+      "description": "[循环04] 卸料预备-小臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 70.55,
+      "cycle_index": 4
+    },
+    {
+      "step": 68,
+      "joint": "bucket_arm",
+      "description": "[循环04] 卸料预备-铲斗半开",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -18.0,
+      "cycle_index": 4
+    },
+    {
+      "step": 69,
+      "joint": "bucket_arm",
+      "description": "[循环04] 打开铲斗卸料",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -90.0,
+      "cycle_index": 4
+    },
+    {
+      "step": 70,
+      "joint": "boom_swing",
+      "description": "循环04结束-过渡位-大臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 25.0,
+      "segment_name": "cycle_04_transit"
+    },
+    {
+      "step": 71,
+      "joint": "arm_boom",
+      "description": "循环04结束-过渡位-小臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 55.0,
+      "segment_name": "cycle_04_transit"
+    },
+    {
+      "step": 72,
+      "joint": "bucket_arm",
+      "description": "循环04结束-过渡位-铲斗",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -10.0,
+      "segment_name": "cycle_04_transit"
+    },
+    {
+      "step": 73,
+      "joint": "swing_yaw",
+      "description": "[循环05] 对准挖掘点（回转）",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -4.76,
+      "cycle_index": 5
+    },
+    {
+      "step": 74,
+      "joint": "bucket_arm",
+      "description": "[循环05] 挖掘预备-半开斗",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -55.0,
+      "cycle_index": 5
+    },
+    {
+      "step": 75,
+      "joint": "boom_swing",
+      "description": "[循环05] 挖掘预备-大臂下探",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 34.45,
+      "cycle_index": 5
+    },
+    {
+      "step": 76,
+      "joint": "arm_boom",
+      "description": "[循环05] 挖掘预备-小臂下探",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 47.88,
+      "cycle_index": 5
+    },
+    {
+      "step": 77,
+      "joint": "bucket_arm",
+      "description": "[循环05] 收斗取料",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 0.0,
+      "cycle_index": 5
+    },
+    {
+      "step": 78,
+      "joint": "arm_boom",
+      "description": "[循环05] 回拉小臂抬料",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 72.0,
+      "cycle_index": 5
+    },
+    {
+      "step": 79,
+      "joint": "boom_swing",
+      "description": "[循环05] 抬大臂离开挖掘点",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 22.45,
+      "cycle_index": 5
+    },
+    {
+      "step": 80,
+      "joint": "arm_boom",
+      "description": "[循环05] 运输姿态-收小臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 72.0,
+      "cycle_index": 5
+    },
+    {
+      "step": 81,
+      "joint": "bucket_arm",
+      "description": "[循环05] 运输姿态-稳料",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -5.0,
+      "cycle_index": 5
+    },
+    {
+      "step": 82,
+      "joint": "swing_yaw",
+      "description": "[循环05] 回转到卸料点",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -95.0,
+      "cycle_index": 5
+    },
+    {
+      "step": 83,
+      "joint": "boom_swing",
+      "description": "[循环05] 卸料预备-大臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 28.12,
+      "cycle_index": 5
+    },
+    {
+      "step": 84,
+      "joint": "arm_boom",
+      "description": "[循环05] 卸料预备-小臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 70.55,
+      "cycle_index": 5
+    },
+    {
+      "step": 85,
+      "joint": "bucket_arm",
+      "description": "[循环05] 卸料预备-铲斗半开",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -18.0,
+      "cycle_index": 5
+    },
+    {
+      "step": 86,
+      "joint": "bucket_arm",
+      "description": "[循环05] 打开铲斗卸料",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -90.0,
+      "cycle_index": 5
+    },
+    {
+      "step": 87,
+      "joint": "boom_swing",
+      "description": "循环05结束-过渡位-大臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 25.0,
+      "segment_name": "cycle_05_transit"
+    },
+    {
+      "step": 88,
+      "joint": "arm_boom",
+      "description": "循环05结束-过渡位-小臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 55.0,
+      "segment_name": "cycle_05_transit"
+    },
+    {
+      "step": 89,
+      "joint": "bucket_arm",
+      "description": "循环05结束-过渡位-铲斗",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -10.0,
+      "segment_name": "cycle_05_transit"
+    },
+    {
+      "step": 90,
+      "joint": "swing_yaw",
+      "description": "[循环06] 对准挖掘点（回转）",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -4.57,
+      "cycle_index": 6
+    },
+    {
+      "step": 91,
+      "joint": "bucket_arm",
+      "description": "[循环06] 挖掘预备-半开斗",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -55.0,
+      "cycle_index": 6
+    },
+    {
+      "step": 92,
+      "joint": "boom_swing",
+      "description": "[循环06] 挖掘预备-大臂下探",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 36.47,
+      "cycle_index": 6
+    },
+    {
+      "step": 93,
+      "joint": "arm_boom",
+      "description": "[循环06] 挖掘预备-小臂下探",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 38.54,
+      "cycle_index": 6
+    },
+    {
+      "step": 94,
+      "joint": "bucket_arm",
+      "description": "[循环06] 收斗取料",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 0.0,
+      "cycle_index": 6
+    },
+    {
+      "step": 95,
+      "joint": "arm_boom",
+      "description": "[循环06] 回拉小臂抬料",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 72.0,
+      "cycle_index": 6
+    },
+    {
+      "step": 96,
+      "joint": "boom_swing",
+      "description": "[循环06] 抬大臂离开挖掘点",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 24.47,
+      "cycle_index": 6
+    },
+    {
+      "step": 97,
+      "joint": "arm_boom",
+      "description": "[循环06] 运输姿态-收小臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 72.0,
+      "cycle_index": 6
+    },
+    {
+      "step": 98,
+      "joint": "bucket_arm",
+      "description": "[循环06] 运输姿态-稳料",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -5.0,
+      "cycle_index": 6
+    },
+    {
+      "step": 99,
+      "joint": "swing_yaw",
+      "description": "[循环06] 回转到卸料点",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -95.0,
+      "cycle_index": 6
+    },
+    {
+      "step": 100,
+      "joint": "boom_swing",
+      "description": "[循环06] 卸料预备-大臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 28.12,
+      "cycle_index": 6
+    },
+    {
+      "step": 101,
+      "joint": "arm_boom",
+      "description": "[循环06] 卸料预备-小臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 70.55,
+      "cycle_index": 6
+    },
+    {
+      "step": 102,
+      "joint": "bucket_arm",
+      "description": "[循环06] 卸料预备-铲斗半开",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -18.0,
+      "cycle_index": 6
+    },
+    {
+      "step": 103,
+      "joint": "bucket_arm",
+      "description": "[循环06] 打开铲斗卸料",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -90.0,
+      "cycle_index": 6
+    },
+    {
+      "step": 104,
+      "joint": "boom_swing",
+      "description": "循环06结束-过渡位-大臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 25.0,
+      "segment_name": "cycle_06_transit"
+    },
+    {
+      "step": 105,
+      "joint": "arm_boom",
+      "description": "循环06结束-过渡位-小臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 55.0,
+      "segment_name": "cycle_06_transit"
+    },
+    {
+      "step": 106,
+      "joint": "bucket_arm",
+      "description": "循环06结束-过渡位-铲斗",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -10.0,
+      "segment_name": "cycle_06_transit"
+    },
+    {
+      "step": 107,
+      "joint": "swing_yaw",
+      "description": "[循环07] 对准挖掘点（回转）",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -4.4,
+      "cycle_index": 7
+    },
+    {
+      "step": 108,
+      "joint": "bucket_arm",
+      "description": "[循环07] 挖掘预备-半开斗",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -55.0,
+      "cycle_index": 7
+    },
+    {
+      "step": 109,
+      "joint": "boom_swing",
+      "description": "[循环07] 挖掘预备-大臂下探",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 39.03,
+      "cycle_index": 7
+    },
+    {
+      "step": 110,
+      "joint": "arm_boom",
+      "description": "[循环07] 挖掘预备-小臂下探",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 28.24,
+      "cycle_index": 7
+    },
+    {
+      "step": 111,
+      "joint": "bucket_arm",
+      "description": "[循环07] 收斗取料",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 0.0,
+      "cycle_index": 7
+    },
+    {
+      "step": 112,
+      "joint": "arm_boom",
+      "description": "[循环07] 回拉小臂抬料",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 72.0,
+      "cycle_index": 7
+    },
+    {
+      "step": 113,
+      "joint": "boom_swing",
+      "description": "[循环07] 抬大臂离开挖掘点",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 27.03,
+      "cycle_index": 7
+    },
+    {
+      "step": 114,
+      "joint": "arm_boom",
+      "description": "[循环07] 运输姿态-收小臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 72.0,
+      "cycle_index": 7
+    },
+    {
+      "step": 115,
+      "joint": "bucket_arm",
+      "description": "[循环07] 运输姿态-稳料",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -5.0,
+      "cycle_index": 7
+    },
+    {
+      "step": 116,
+      "joint": "swing_yaw",
+      "description": "[循环07] 回转到卸料点",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -95.0,
+      "cycle_index": 7
+    },
+    {
+      "step": 117,
+      "joint": "boom_swing",
+      "description": "[循环07] 卸料预备-大臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 28.12,
+      "cycle_index": 7
+    },
+    {
+      "step": 118,
+      "joint": "arm_boom",
+      "description": "[循环07] 卸料预备-小臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 70.55,
+      "cycle_index": 7
+    },
+    {
+      "step": 119,
+      "joint": "bucket_arm",
+      "description": "[循环07] 卸料预备-铲斗半开",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -18.0,
+      "cycle_index": 7
+    },
+    {
+      "step": 120,
+      "joint": "bucket_arm",
+      "description": "[循环07] 打开铲斗卸料",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -90.0,
+      "cycle_index": 7
+    },
+    {
+      "step": 121,
+      "joint": "boom_swing",
+      "description": "循环07结束-过渡位-大臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 25.0,
+      "segment_name": "cycle_07_transit"
+    },
+    {
+      "step": 122,
+      "joint": "arm_boom",
+      "description": "循环07结束-过渡位-小臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 55.0,
+      "segment_name": "cycle_07_transit"
+    },
+    {
+      "step": 123,
+      "joint": "bucket_arm",
+      "description": "循环07结束-过渡位-铲斗",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -10.0,
+      "segment_name": "cycle_07_transit"
+    },
+    {
+      "step": 124,
+      "joint": "swing_yaw",
+      "description": "[循环08] 对准挖掘点（回转）",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 4.4,
+      "cycle_index": 8
+    },
+    {
+      "step": 125,
+      "joint": "bucket_arm",
+      "description": "[循环08] 挖掘预备-半开斗",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -55.0,
+      "cycle_index": 8
+    },
+    {
+      "step": 126,
+      "joint": "boom_swing",
+      "description": "[循环08] 挖掘预备-大臂下探",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 39.03,
+      "cycle_index": 8
+    },
+    {
+      "step": 127,
+      "joint": "arm_boom",
+      "description": "[循环08] 挖掘预备-小臂下探",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 28.24,
+      "cycle_index": 8
+    },
+    {
+      "step": 128,
+      "joint": "bucket_arm",
+      "description": "[循环08] 收斗取料",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 0.0,
+      "cycle_index": 8
+    },
+    {
+      "step": 129,
+      "joint": "arm_boom",
+      "description": "[循环08] 回拉小臂抬料",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 72.0,
+      "cycle_index": 8
+    },
+    {
+      "step": 130,
+      "joint": "boom_swing",
+      "description": "[循环08] 抬大臂离开挖掘点",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 27.03,
+      "cycle_index": 8
+    },
+    {
+      "step": 131,
+      "joint": "arm_boom",
+      "description": "[循环08] 运输姿态-收小臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 72.0,
+      "cycle_index": 8
+    },
+    {
+      "step": 132,
+      "joint": "bucket_arm",
+      "description": "[循环08] 运输姿态-稳料",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -5.0,
+      "cycle_index": 8
+    },
+    {
+      "step": 133,
+      "joint": "swing_yaw",
+      "description": "[循环08] 回转到卸料点",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -95.0,
+      "cycle_index": 8
+    },
+    {
+      "step": 134,
+      "joint": "boom_swing",
+      "description": "[循环08] 卸料预备-大臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 28.12,
+      "cycle_index": 8
+    },
+    {
+      "step": 135,
+      "joint": "arm_boom",
+      "description": "[循环08] 卸料预备-小臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 70.55,
+      "cycle_index": 8
+    },
+    {
+      "step": 136,
+      "joint": "bucket_arm",
+      "description": "[循环08] 卸料预备-铲斗半开",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -18.0,
+      "cycle_index": 8
+    },
+    {
+      "step": 137,
+      "joint": "bucket_arm",
+      "description": "[循环08] 打开铲斗卸料",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -90.0,
+      "cycle_index": 8
+    },
+    {
+      "step": 138,
+      "joint": "boom_swing",
+      "description": "循环08结束-过渡位-大臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 25.0,
+      "segment_name": "cycle_08_transit"
+    },
+    {
+      "step": 139,
+      "joint": "arm_boom",
+      "description": "循环08结束-过渡位-小臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 55.0,
+      "segment_name": "cycle_08_transit"
+    },
+    {
+      "step": 140,
+      "joint": "bucket_arm",
+      "description": "循环08结束-过渡位-铲斗",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -10.0,
+      "segment_name": "cycle_08_transit"
+    },
+    {
+      "step": 141,
+      "joint": "swing_yaw",
+      "description": "[循环09] 对准挖掘点（回转）",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 4.57,
+      "cycle_index": 9
+    },
+    {
+      "step": 142,
+      "joint": "bucket_arm",
+      "description": "[循环09] 挖掘预备-半开斗",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -55.0,
+      "cycle_index": 9
+    },
+    {
+      "step": 143,
+      "joint": "boom_swing",
+      "description": "[循环09] 挖掘预备-大臂下探",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 36.47,
+      "cycle_index": 9
+    },
+    {
+      "step": 144,
+      "joint": "arm_boom",
+      "description": "[循环09] 挖掘预备-小臂下探",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 38.54,
+      "cycle_index": 9
+    },
+    {
+      "step": 145,
+      "joint": "bucket_arm",
+      "description": "[循环09] 收斗取料",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 0.0,
+      "cycle_index": 9
+    },
+    {
+      "step": 146,
+      "joint": "arm_boom",
+      "description": "[循环09] 回拉小臂抬料",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 72.0,
+      "cycle_index": 9
+    },
+    {
+      "step": 147,
+      "joint": "boom_swing",
+      "description": "[循环09] 抬大臂离开挖掘点",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 24.47,
+      "cycle_index": 9
+    },
+    {
+      "step": 148,
+      "joint": "arm_boom",
+      "description": "[循环09] 运输姿态-收小臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 72.0,
+      "cycle_index": 9
+    },
+    {
+      "step": 149,
+      "joint": "bucket_arm",
+      "description": "[循环09] 运输姿态-稳料",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -5.0,
+      "cycle_index": 9
+    },
+    {
+      "step": 150,
+      "joint": "swing_yaw",
+      "description": "[循环09] 回转到卸料点",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -95.0,
+      "cycle_index": 9
+    },
+    {
+      "step": 151,
+      "joint": "boom_swing",
+      "description": "[循环09] 卸料预备-大臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 28.12,
+      "cycle_index": 9
+    },
+    {
+      "step": 152,
+      "joint": "arm_boom",
+      "description": "[循环09] 卸料预备-小臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 70.55,
+      "cycle_index": 9
+    },
+    {
+      "step": 153,
+      "joint": "bucket_arm",
+      "description": "[循环09] 卸料预备-铲斗半开",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -18.0,
+      "cycle_index": 9
+    },
+    {
+      "step": 154,
+      "joint": "bucket_arm",
+      "description": "[循环09] 打开铲斗卸料",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -90.0,
+      "cycle_index": 9
+    },
+    {
+      "step": 155,
+      "joint": "boom_swing",
+      "description": "循环09结束-过渡位-大臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 25.0,
+      "segment_name": "cycle_09_transit"
+    },
+    {
+      "step": 156,
+      "joint": "arm_boom",
+      "description": "循环09结束-过渡位-小臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 55.0,
+      "segment_name": "cycle_09_transit"
+    },
+    {
+      "step": 157,
+      "joint": "bucket_arm",
+      "description": "循环09结束-过渡位-铲斗",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -10.0,
+      "segment_name": "cycle_09_transit"
+    },
+    {
+      "step": 158,
+      "joint": "swing_yaw",
+      "description": "[循环10] 对准挖掘点（回转）",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 4.76,
+      "cycle_index": 10
+    },
+    {
+      "step": 159,
+      "joint": "bucket_arm",
+      "description": "[循环10] 挖掘预备-半开斗",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -55.0,
+      "cycle_index": 10
+    },
+    {
+      "step": 160,
+      "joint": "boom_swing",
+      "description": "[循环10] 挖掘预备-大臂下探",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 34.45,
+      "cycle_index": 10
+    },
+    {
+      "step": 161,
+      "joint": "arm_boom",
+      "description": "[循环10] 挖掘预备-小臂下探",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 47.88,
+      "cycle_index": 10
+    },
+    {
+      "step": 162,
+      "joint": "bucket_arm",
+      "description": "[循环10] 收斗取料",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 0.0,
+      "cycle_index": 10
+    },
+    {
+      "step": 163,
+      "joint": "arm_boom",
+      "description": "[循环10] 回拉小臂抬料",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 72.0,
+      "cycle_index": 10
+    },
+    {
+      "step": 164,
+      "joint": "boom_swing",
+      "description": "[循环10] 抬大臂离开挖掘点",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 22.45,
+      "cycle_index": 10
+    },
+    {
+      "step": 165,
+      "joint": "arm_boom",
+      "description": "[循环10] 运输姿态-收小臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 72.0,
+      "cycle_index": 10
+    },
+    {
+      "step": 166,
+      "joint": "bucket_arm",
+      "description": "[循环10] 运输姿态-稳料",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -5.0,
+      "cycle_index": 10
+    },
+    {
+      "step": 167,
+      "joint": "swing_yaw",
+      "description": "[循环10] 回转到卸料点",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -95.0,
+      "cycle_index": 10
+    },
+    {
+      "step": 168,
+      "joint": "boom_swing",
+      "description": "[循环10] 卸料预备-大臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 28.12,
+      "cycle_index": 10
+    },
+    {
+      "step": 169,
+      "joint": "arm_boom",
+      "description": "[循环10] 卸料预备-小臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 70.55,
+      "cycle_index": 10
+    },
+    {
+      "step": 170,
+      "joint": "bucket_arm",
+      "description": "[循环10] 卸料预备-铲斗半开",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -18.0,
+      "cycle_index": 10
+    },
+    {
+      "step": 171,
+      "joint": "bucket_arm",
+      "description": "[循环10] 打开铲斗卸料",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -90.0,
+      "cycle_index": 10
+    },
+    {
+      "step": 172,
+      "joint": "boom_swing",
+      "description": "循环10结束-过渡位-大臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 25.0,
+      "segment_name": "cycle_10_transit"
+    },
+    {
+      "step": 173,
+      "joint": "arm_boom",
+      "description": "循环10结束-过渡位-小臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 55.0,
+      "segment_name": "cycle_10_transit"
+    },
+    {
+      "step": 174,
+      "joint": "bucket_arm",
+      "description": "循环10结束-过渡位-铲斗",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -10.0,
+      "segment_name": "cycle_10_transit"
+    },
+    {
+      "step": 175,
+      "joint": "swing_yaw",
+      "description": "[循环11] 对准挖掘点（回转）",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 4.97,
+      "cycle_index": 11
+    },
+    {
+      "step": 176,
+      "joint": "bucket_arm",
+      "description": "[循环11] 挖掘预备-半开斗",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -55.0,
+      "cycle_index": 11
+    },
+    {
+      "step": 177,
+      "joint": "boom_swing",
+      "description": "[循环11] 挖掘预备-大臂下探",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 32.88,
+      "cycle_index": 11
+    },
+    {
+      "step": 178,
+      "joint": "arm_boom",
+      "description": "[循环11] 挖掘预备-小臂下探",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 56.57,
+      "cycle_index": 11
+    },
+    {
+      "step": 179,
+      "joint": "bucket_arm",
+      "description": "[循环11] 收斗取料",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 0.0,
+      "cycle_index": 11
+    },
+    {
+      "step": 180,
+      "joint": "arm_boom",
+      "description": "[循环11] 回拉小臂抬料",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 72.0,
+      "cycle_index": 11
+    },
+    {
+      "step": 181,
+      "joint": "boom_swing",
+      "description": "[循环11] 抬大臂离开挖掘点",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 20.88,
+      "cycle_index": 11
+    },
+    {
+      "step": 182,
+      "joint": "arm_boom",
+      "description": "[循环11] 运输姿态-收小臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 72.0,
+      "cycle_index": 11
+    },
+    {
+      "step": 183,
+      "joint": "bucket_arm",
+      "description": "[循环11] 运输姿态-稳料",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -5.0,
+      "cycle_index": 11
+    },
+    {
+      "step": 184,
+      "joint": "swing_yaw",
+      "description": "[循环11] 回转到卸料点",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -95.0,
+      "cycle_index": 11
+    },
+    {
+      "step": 185,
+      "joint": "boom_swing",
+      "description": "[循环11] 卸料预备-大臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 28.12,
+      "cycle_index": 11
+    },
+    {
+      "step": 186,
+      "joint": "arm_boom",
+      "description": "[循环11] 卸料预备-小臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 70.55,
+      "cycle_index": 11
+    },
+    {
+      "step": 187,
+      "joint": "bucket_arm",
+      "description": "[循环11] 卸料预备-铲斗半开",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -18.0,
+      "cycle_index": 11
+    },
+    {
+      "step": 188,
+      "joint": "bucket_arm",
+      "description": "[循环11] 打开铲斗卸料",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -90.0,
+      "cycle_index": 11
+    },
+    {
+      "step": 189,
+      "joint": "boom_swing",
+      "description": "循环11结束-过渡位-大臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 25.0,
+      "segment_name": "cycle_11_transit"
+    },
+    {
+      "step": 190,
+      "joint": "arm_boom",
+      "description": "循环11结束-过渡位-小臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 55.0,
+      "segment_name": "cycle_11_transit"
+    },
+    {
+      "step": 191,
+      "joint": "bucket_arm",
+      "description": "循环11结束-过渡位-铲斗",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -10.0,
+      "segment_name": "cycle_11_transit"
+    },
+    {
+      "step": 192,
+      "joint": "swing_yaw",
+      "description": "[循环12] 对准挖掘点（回转）",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 5.19,
+      "cycle_index": 12
+    },
+    {
+      "step": 193,
+      "joint": "bucket_arm",
+      "description": "[循环12] 挖掘预备-半开斗",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -55.0,
+      "cycle_index": 12
+    },
+    {
+      "step": 194,
+      "joint": "boom_swing",
+      "description": "[循环12] 挖掘预备-大臂下探",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 31.76,
+      "cycle_index": 12
+    },
+    {
+      "step": 195,
+      "joint": "arm_boom",
+      "description": "[循环12] 挖掘预备-小臂下探",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 64.82,
+      "cycle_index": 12
+    },
+    {
+      "step": 196,
+      "joint": "bucket_arm",
+      "description": "[循环12] 收斗取料",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 0.0,
+      "cycle_index": 12
+    },
+    {
+      "step": 197,
+      "joint": "arm_boom",
+      "description": "[循环12] 回拉小臂抬料",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 72.0,
+      "cycle_index": 12
+    },
+    {
+      "step": 198,
+      "joint": "boom_swing",
+      "description": "[循环12] 抬大臂离开挖掘点",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 19.76,
+      "cycle_index": 12
+    },
+    {
+      "step": 199,
+      "joint": "arm_boom",
+      "description": "[循环12] 运输姿态-收小臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 72.0,
+      "cycle_index": 12
+    },
+    {
+      "step": 200,
+      "joint": "bucket_arm",
+      "description": "[循环12] 运输姿态-稳料",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -5.0,
+      "cycle_index": 12
+    },
+    {
+      "step": 201,
+      "joint": "swing_yaw",
+      "description": "[循环12] 回转到卸料点",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -95.0,
+      "cycle_index": 12
+    },
+    {
+      "step": 202,
+      "joint": "boom_swing",
+      "description": "[循环12] 卸料预备-大臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 28.12,
+      "cycle_index": 12
+    },
+    {
+      "step": 203,
+      "joint": "arm_boom",
+      "description": "[循环12] 卸料预备-小臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 70.55,
+      "cycle_index": 12
+    },
+    {
+      "step": 204,
+      "joint": "bucket_arm",
+      "description": "[循环12] 卸料预备-铲斗半开",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -18.0,
+      "cycle_index": 12
+    },
+    {
+      "step": 205,
+      "joint": "bucket_arm",
+      "description": "[循环12] 打开铲斗卸料",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -90.0,
+      "cycle_index": 12
+    },
+    {
+      "step": 206,
+      "joint": "boom_swing",
+      "description": "循环12结束-过渡位-大臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 25.0,
+      "segment_name": "cycle_12_transit"
+    },
+    {
+      "step": 207,
+      "joint": "arm_boom",
+      "description": "循环12结束-过渡位-小臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 55.0,
+      "segment_name": "cycle_12_transit"
+    },
+    {
+      "step": 208,
+      "joint": "bucket_arm",
+      "description": "循环12结束-过渡位-铲斗",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -10.0,
+      "segment_name": "cycle_12_transit"
+    },
+    {
+      "step": 209,
+      "joint": "swing_yaw",
+      "description": "[循环13] 对准挖掘点（回转）",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 5.44,
+      "cycle_index": 13
+    },
+    {
+      "step": 210,
+      "joint": "bucket_arm",
+      "description": "[循环13] 挖掘预备-半开斗",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -55.0,
+      "cycle_index": 13
+    },
+    {
+      "step": 211,
+      "joint": "boom_swing",
+      "description": "[循环13] 挖掘预备-大臂下探",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 31.1,
+      "cycle_index": 13
+    },
+    {
+      "step": 212,
+      "joint": "arm_boom",
+      "description": "[循环13] 挖掘预备-小臂下探",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 72.78,
+      "cycle_index": 13
+    },
+    {
+      "step": 213,
+      "joint": "bucket_arm",
+      "description": "[循环13] 收斗取料",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 0.0,
+      "cycle_index": 13
+    },
+    {
+      "step": 214,
+      "joint": "arm_boom",
+      "description": "[循环13] 回拉小臂抬料",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 72.78,
+      "cycle_index": 13
+    },
+    {
+      "step": 215,
+      "joint": "boom_swing",
+      "description": "[循环13] 抬大臂离开挖掘点",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 19.1,
+      "cycle_index": 13
+    },
+    {
+      "step": 216,
+      "joint": "arm_boom",
+      "description": "[循环13] 运输姿态-收小臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 72.78,
+      "cycle_index": 13
+    },
+    {
+      "step": 217,
+      "joint": "bucket_arm",
+      "description": "[循环13] 运输姿态-稳料",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -5.0,
+      "cycle_index": 13
+    },
+    {
+      "step": 218,
+      "joint": "swing_yaw",
+      "description": "[循环13] 回转到卸料点",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -95.0,
+      "cycle_index": 13
+    },
+    {
+      "step": 219,
+      "joint": "boom_swing",
+      "description": "[循环13] 卸料预备-大臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 28.12,
+      "cycle_index": 13
+    },
+    {
+      "step": 220,
+      "joint": "arm_boom",
+      "description": "[循环13] 卸料预备-小臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 70.55,
+      "cycle_index": 13
+    },
+    {
+      "step": 221,
+      "joint": "bucket_arm",
+      "description": "[循环13] 卸料预备-铲斗半开",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -18.0,
+      "cycle_index": 13
+    },
+    {
+      "step": 222,
+      "joint": "bucket_arm",
+      "description": "[循环13] 打开铲斗卸料",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -90.0,
+      "cycle_index": 13
+    },
+    {
+      "step": 223,
+      "joint": "boom_swing",
+      "description": "循环13结束-过渡位-大臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 25.0,
+      "segment_name": "cycle_13_transit"
+    },
+    {
+      "step": 224,
+      "joint": "arm_boom",
+      "description": "循环13结束-过渡位-小臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 55.0,
+      "segment_name": "cycle_13_transit"
+    },
+    {
+      "step": 225,
+      "joint": "bucket_arm",
+      "description": "循环13结束-过渡位-铲斗",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -10.0,
+      "segment_name": "cycle_13_transit"
+    },
+    {
+      "step": 226,
+      "joint": "swing_yaw",
+      "description": "[循环14] 对准挖掘点（回转）",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 5.71,
+      "cycle_index": 14
+    },
+    {
+      "step": 227,
+      "joint": "bucket_arm",
+      "description": "[循环14] 挖掘预备-半开斗",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -55.0,
+      "cycle_index": 14
+    },
+    {
+      "step": 228,
+      "joint": "boom_swing",
+      "description": "[循环14] 挖掘预备-大臂下探",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 35.37,
+      "cycle_index": 14
+    },
+    {
+      "step": 229,
+      "joint": "arm_boom",
+      "description": "[循环14] 挖掘预备-小臂下探",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 85.25,
+      "cycle_index": 14
+    },
+    {
+      "step": 230,
+      "joint": "bucket_arm",
+      "description": "[循环14] 收斗取料",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 0.0,
+      "cycle_index": 14
+    },
+    {
+      "step": 231,
+      "joint": "arm_boom",
+      "description": "[循环14] 回拉小臂抬料",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 85.25,
+      "cycle_index": 14
+    },
+    {
+      "step": 232,
+      "joint": "boom_swing",
+      "description": "[循环14] 抬大臂离开挖掘点",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 23.37,
+      "cycle_index": 14
+    },
+    {
+      "step": 233,
+      "joint": "arm_boom",
+      "description": "[循环14] 运输姿态-收小臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 85.25,
+      "cycle_index": 14
+    },
+    {
+      "step": 234,
+      "joint": "bucket_arm",
+      "description": "[循环14] 运输姿态-稳料",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -5.0,
+      "cycle_index": 14
+    },
+    {
+      "step": 235,
+      "joint": "swing_yaw",
+      "description": "[循环14] 回转到卸料点",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -95.0,
+      "cycle_index": 14
+    },
+    {
+      "step": 236,
+      "joint": "boom_swing",
+      "description": "[循环14] 卸料预备-大臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 28.12,
+      "cycle_index": 14
+    },
+    {
+      "step": 237,
+      "joint": "arm_boom",
+      "description": "[循环14] 卸料预备-小臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 70.55,
+      "cycle_index": 14
+    },
+    {
+      "step": 238,
+      "joint": "bucket_arm",
+      "description": "[循环14] 卸料预备-铲斗半开",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -18.0,
+      "cycle_index": 14
+    },
+    {
+      "step": 239,
+      "joint": "bucket_arm",
+      "description": "[循环14] 打开铲斗卸料",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -90.0,
+      "cycle_index": 14
+    },
+    {
+      "step": 240,
+      "joint": "boom_swing",
+      "description": "循环14结束-过渡位-大臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 25.0,
+      "segment_name": "cycle_14_transit"
+    },
+    {
+      "step": 241,
+      "joint": "arm_boom",
+      "description": "循环14结束-过渡位-小臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 55.0,
+      "segment_name": "cycle_14_transit"
+    },
+    {
+      "step": 242,
+      "joint": "bucket_arm",
+      "description": "循环14结束-过渡位-铲斗",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -10.0,
+      "segment_name": "cycle_14_transit"
+    },
+    {
+      "step": 243,
+      "joint": "swing_yaw",
+      "description": "归位-回转",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 0.0,
+      "segment_name": "home_segment"
+    },
+    {
+      "step": 244,
+      "joint": "boom_swing",
+      "description": "归位-大臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 5.0,
+      "segment_name": "home_segment"
+    },
+    {
+      "step": 245,
+      "joint": "arm_boom",
+      "description": "归位-小臂",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": 10.0,
+      "segment_name": "home_segment"
+    },
+    {
+      "step": 246,
+      "joint": "bucket_arm",
+      "description": "归位-铲斗",
+      "ch1_mv": 0,
+      "ch2_mv": 0,
+      "ch3_mv": 3500,
+      "ramp_up_s": 0.2,
+      "ramp_down_s": 0.2,
+      "target_val": -80.0,
+      "segment_name": "home_segment"
+    }
+  ]
+}

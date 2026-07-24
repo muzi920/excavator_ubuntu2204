@@ -1,0 +1,58 @@
+{
+  "task_name": "mode1_real_pcd_demo",
+  "pcd": {
+    "dataset_dir": "/media/libo/libo_sn7100/ubuntu2204/shandong_ws/src/shandong/v14_urdf/mode1/pcd",
+    "glob": "fused3_pointcloud_base_link_0336_*.pcd",
+    "limit": 1,
+    "mask_center_radius": 0.55,
+    "heap_z_min": 0.05,
+    "heap_z_max": 0.5,
+    "front_x_min": 0.35
+  },
+  "workspace": {
+    "r_min": 0.85,
+    "r_max": 1.75,
+    "yaw_min_deg": -50.0,
+    "yaw_max_deg": 50.0,
+    "z_min": 0.1,
+    "z_max": 0.35
+  },
+  "auto_rect": {
+    "padding_x": 0.12,
+    "padding_y": 0.12,
+    "min_length": 0.3,
+    "min_width": 0.3,
+    "target_z": 0.17,
+    "yaw_deg": 0.0
+  },
+  "dump_strategy": {
+    "direction": "right",
+    "yaw_deg": 95.0,
+    "yaw_tolerance_deg": 10.0,
+    "dump_radius": 1.1,
+    "dump_height": 0.5
+  },
+  "poses": {
+    "init_pose": {
+      "swing_yaw": 0.0,
+      "boom_swing": 10.0,
+      "arm_boom": 20.0,
+      "bucket_arm": -30.0
+    },
+    "cycle_transit_pose": {
+      "boom_swing": 25.0,
+      "arm_boom": 55.0,
+      "bucket_arm": -10.0
+    },
+    "home_pose": {
+      "swing_yaw": 0.0,
+      "boom_swing": 5.0,
+      "arm_boom": 10.0,
+      "bucket_arm": -80.0
+    }
+  },
+  "sampling": {
+    "pattern": "boustrophedon"
+  },
+  "max_candidates": 6
+}

@@ -1,0 +1,48 @@
+{
+  "task_name": "mode1_area_sampling_demo",
+  "workspace": {
+    "r_min": 0.85,
+    "r_max": 1.75,
+    "yaw_min_deg": -45.0,
+    "yaw_max_deg": 45.0,
+    "z_min": -0.10,
+    "z_max": 0.30
+  },
+  "dig_area_rect": {
+    "center": {"x": 1.20, "y": 0.05, "z": 0.17},
+    "length": 0.80,
+    "width": 0.40,
+    "yaw_deg": 0.0
+  },
+  "dump_strategy": {
+    "direction": "right",
+    "yaw_deg": 95.0,
+    "yaw_tolerance_deg": 10.0,
+    "dump_radius": 1.10,
+    "dump_height": 0.50
+  },
+  "poses": {
+    "init_pose": {
+      "swing_yaw": 0.0,
+      "boom_swing": 10.0,
+      "arm_boom": 20.0,
+      "bucket_arm": -30.0
+    },
+    "cycle_transit_pose": {
+      "boom_swing": 25.0,
+      "arm_boom": 55.0,
+      "bucket_arm": -10.0
+    },
+    "home_pose": {
+      "swing_yaw": 0.0,
+      "boom_swing": 5.0,
+      "arm_boom": 10.0,
+      "bucket_arm": -80.0
+    }
+  },
+  "sampling": {
+    "step_along_length": 0.18,
+    "step_along_width": 0.16,
+    "pattern": "boustrophedon"
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "source": "ceres_match_operable_points",
+  "points_path": "/media/libo/libo_sn7100/ubuntu2204/shandong_ws/src/shandong/v14_urdf/mode1/real_pcd/output/base_link_0000_ceres_match_cpu_xyfront_x0p5/operable_region_points.pcd",
+  "xy_bin": 0.08,
+  "filter_stats": {
+    "input_points": 204,
+    "surface_bins": 58,
+    "rejected_workspace_radius": 14,
+    "rejected_workspace_yaw": 0,
+    "candidate_bins": 3
+  },
+  "candidate_dig_points": [
+    {
+      "x": 1.595968246459961,
+      "y": -0.3717666566371918,
+      "z": 0.12352131903171538,
+      "radius": 1.6386961556968633,
+      "yaw_deg": -13.11270948037429,
+      "bin_x": 1.6,
+      "bin_y": -0.4,
+      "bin_key": [
+        20,
+        -5
+      ],
+      "sample_count": 9,
+      "candidate_index": 1
+    },
+    {
+      "x": 1.1969308853149414,
+      "y": -0.4779355823993683,
+      "z": 0.06732023805379868,
+      "radius": 1.2888234809873045,
+      "yaw_deg": -21.76687068816427,
+      "bin_x": 1.2,
+      "bin_y": -0.48,
+      "bin_key": [
+        15,
+        -6
+      ],
+      "sample_count": 9,
+      "candidate_index": 2
+    },
+    {
+      "x": 0.9686825275421143,
+      "y": 0.40525996685028076,
+      "z": 0.14530185163021087,
+      "radius": 1.0500387992340423,
+      "yaw_deg": 22.702581765852567,
+      "bin_x": 0.96,
+      "bin_y": 0.4,
+      "bin_key": [
+        12,
+        5
+      ],
+      "sample_count": 9,
+      "candidate_index": 3
+    }
+  ]
+}
