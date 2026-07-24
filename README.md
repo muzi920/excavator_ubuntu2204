@@ -8,6 +8,8 @@
 可以直接阅读：
 
 - `README_math_models_and_interfaces.md`
+- `README_control_and_sensor_interfaces.md`
+- `README_v14_control_interface_unification_plan.md`
 
 ## 项目概览
 - `v1_control_base`：中盛 CAN 控制板底层控制与点动 GUI
