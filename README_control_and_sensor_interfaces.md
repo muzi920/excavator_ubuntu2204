@@ -364,7 +364,7 @@ python3 src/shandong/v4_control_closed/run_closed_loop_script.py --json path/to/
 
 ```text
 UDP 6668
-雷达设备 192.168.158.98:6543
+雷达设备 192.168.158.99:6543
 ```
 
 ### 用法

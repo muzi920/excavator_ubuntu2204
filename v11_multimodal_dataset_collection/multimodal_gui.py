@@ -14,7 +14,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "v
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "v3_sensor_read_wit", "WitStandardModbus_WT901C485-main", "Python", "Python-SDK-WT901C485_new")))
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "v5_sensor_read_lidar")))
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "v4_control_closed")))
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "v10_cailbration")))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "v10_cailbration_arm")))
 
 import matplotlib
 matplotlib.use("TkAgg")
@@ -31,7 +31,7 @@ from imu_direct_swing_estimator import DirectSwingAngleEstimator, LISTEN_PORT
 
 # LIDAR 协议常量
 LIDARPOINTCLOUD = 0x01
-LIDAR_IP = "192.168.158.98"
+LIDAR_IP = "192.168.158.99"
 LIDAR_PORT = 6543
 
 from multimodal_recorder import MultimodalRecorder, VideoStreamThread

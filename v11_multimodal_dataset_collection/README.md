@@ -53,8 +53,40 @@
 - 机制：在 JSON 剧本复现时，自动截取真实传感器角度帧生成 3D 俯视/侧视图动画。
 
 ## 运行方式
+
+本系统提供了两种运行版本：**ROS2 发布版本**（推荐，支持 RViz 实时查看）和 **纯 Python 本地版本**。
+
+### 方式一：运行 ROS2 版本 (推荐)
+
+此版本会在后台发布相机图像、关节状态和雷达点云到 ROS 网络，支持你通过 `rosbag` 录制或使用 RViz 实时观察环境。
+
 ```bash
+# 1. 进入工作区并 source ROS2 与当前工程环境 (必须)
+cd /media/libo/libo_sn7100/ubuntu2204/shandong_ws
+source /opt/ros/humble/setup.bash
+source install/setup.bash
+
+# 2. 启动 GUI 与 ROS 节点
+python3 src/shandong/v11_multimodal_dataset_collection/ros2_multimodal_gui.py
+```
+
+**ROS2 版本特有的话题说明：**
+- `/lidar/points` (Frame: `odom`): 抗旋补偿后的点云。当挖掘机转动时，周围环境（树木、墙壁）在 RViz 中会保持静止，**推荐在录制 rosbag 时记录此话题**。
+- `/lidar/points_base_link` (Frame: `base_link`): 未进行重力与抗旋补偿的原始点云，随车体转动。
+- `/excavator/joint_states`: 实时发布的挖掘机 4 个关节角度。
+- `/camera_hik/image_raw` 等: 实时发布的摄像头图像。
+
+### 方式二：运行纯 Python 本地版本
+
+此版本不依赖 ROS 环境，主要用于快速离线数据集采集（直接存为 `.npy` 和 `.jpg`）。
+
+```bash
+cd /media/libo/libo_sn7100/ubuntu2204/shandong_ws/src/shandong/v11_multimodal_dataset_collection
 python3 multimodal_gui.py
 ```
+
+---
+
+### 操作说明
 - 点击 **【🚀 启动端到端数据采集】** 开启所有传感器落盘。
 - 点击 **【📂 选择并执行 JSON 剧本】**（默认路径 `src/shandong/json/`）即可一键复现闭环动作。

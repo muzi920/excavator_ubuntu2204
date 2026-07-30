@@ -10,7 +10,7 @@
 <!-- prettier-ignore -->
 > [!IMPORTANT]
 > 当前 `lidar_reader` 和 `lidar_imu_reader` 都连接同一台雷达设备，默认都使用
-> UDP 监听端口 `6668` 和设备地址 `192.168.158.98:6543`。如果现场设备不支持
+> UDP 监听端口 `6668` 和设备地址 `192.168.158.99:6543`。如果现场设备不支持
 > 两个进程同时接收同一份 UDP 数据，你需要把它们改成单接收节点，再由内部转发。
 
 ## 程序与硬件对应关系
@@ -21,8 +21,8 @@
 | ROS2 可执行程序 | ROS 节点名 | 对应硬件 | 默认连接参数 | 主要输出 |
 | --- | --- | --- | --- | --- |
 | `inclinometer_reader` | `v13_inclinometer_reader` | 4 路倾角传感器 | `/dev/ttyUSB_Sensor1`~`4`，`230400` 波特率 | `/v13/inclinometer/raw`，`/v13/inclinometer/group` |
-| `lidar_reader` | `v13_lidar_reader` | 雷达点云 | 监听 `6668`，设备 `192.168.158.98:6543` | `/v13/lidar/points` |
-| `lidar_imu_reader` | `v13_lidar_imu_reader` | 雷达内置 IMU / 回转 IMU 数据 | 监听 `6668`，设备 `192.168.158.98:6543` | `/v13/lidar/imu` |
+| `lidar_reader` | `v13_lidar_reader` | 雷达点云 | 监听 `6668`，设备 `192.168.158.99:6543` | `/v13/lidar/points` |
+| `lidar_imu_reader` | `v13_lidar_imu_reader` | 雷达内置 IMU / 回转 IMU 数据 | 监听 `6668`，设备 `192.168.158.99:6543` | `/v13/lidar/imu` |
 | `controller_node` | `v13_controller_node` | 挖机控制器 / USB-CAN 控制串口 | `/dev/ttyUSB_Controller`，`115200` 波特率 | `/v13/controller/status` |
 | `v13_main_node` | `v13_main_node` | 不直接连接硬件 | 订阅倾角组和雷达 IMU 输出 | `/v13/robot/joint_state`，`/v13/system/summary` |
 | `v13_python_bridge.py` | `v13_python_bridge` | 不直接连接硬件 | 无默认硬件连接 | 预留给 Python 调用 |
@@ -138,7 +138,7 @@ ros2 run v13_excavator_ros lidar_reader
 测试时重点看这些内容：
 
 - 本机 UDP 监听端口：`6668`
-- 雷达设备地址：`192.168.158.98:6543`
+- 雷达设备地址：`192.168.158.99:6543`
 - 状态话题：`/v13/lidar/status`
 - 点云话题：`/v13/lidar/points`
 
@@ -165,7 +165,7 @@ ros2 run v13_excavator_ros lidar_imu_reader
 测试时重点看这些内容：
 
 - 本机 UDP 监听端口：`6668`
-- 雷达设备地址：`192.168.158.98:6543`
+- 雷达设备地址：`192.168.158.99:6543`
 - 状态话题：`/v13/lidar_imu/status`
 - IMU 话题：`/v13/lidar/imu`
 

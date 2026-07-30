@@ -22,7 +22,7 @@ LidarImuReaderNode::LidarImuReaderNode(const rclcpp::NodeOptions & options)
 : rclcpp::Node("v13_lidar_imu_reader", options)
 {
   listen_port_ = this->declare_parameter<int>("listen_port", 6668);
-  lidar_ip_ = this->declare_parameter<std::string>("lidar_ip", "192.168.158.98");
+  lidar_ip_ = this->declare_parameter<std::string>("lidar_ip", "192.168.158.99");
   lidar_port_ = this->declare_parameter<int>("lidar_port", 6543);
   const auto topic_name = this->declare_parameter<std::string>("topic_name", "/v13/lidar/imu");
   const auto status_topic = this->declare_parameter<std::string>("status_topic", "/v13/lidar_imu/status");

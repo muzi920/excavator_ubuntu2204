@@ -6,7 +6,7 @@ import time
 import numpy as np
 
 class LidarDirectReader:
-    def __init__(self, ip="0.0.0.0", port=6668):
+    def __init__(self, ip="0.0.0.0", port=6669):
         self.ip = ip
         self.port = port
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)

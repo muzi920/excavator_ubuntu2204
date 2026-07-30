@@ -30,11 +30,11 @@ def generate_launch_description():
         default_value='rtsp://admin:GWWzPzb2Tci@192.168.158.102:554/stream',
         description='网络摄像头 1 RTSP 地址'
     )
-    net2_url_arg = DeclareLaunchArgument(
-        'net2_url',
-        default_value='rtsp://admin:@192.168.158.103:554/stream',
-        description='网络摄像头 2 RTSP 地址'
-    )
+    # net2_url_arg = DeclareLaunchArgument(
+    #     'net2_url',
+    #     default_value='rtsp://admin:@192.168.158.103:554/stream',
+    #     description='网络摄像头 2 RTSP 地址'
+    # )
 
     # 海康摄像头节点 (TCP)
     hik_node = Node(
@@ -84,7 +84,7 @@ def generate_launch_description():
     return LaunchDescription([
         hik_url_arg,
         net1_url_arg,
-        net2_url_arg,
+        # net2_url_arg,
         hik_node,
         net1_node,
         net2_node,

@@ -5,11 +5,11 @@ import sys
 import time
 
 # Constants matching the C++ SDK
-UDP_PORT = 6668
+UDP_PORT = 6669
 IMU_UDP_PORT = 6543 # sometimes IMU data uses a different port, but usually mixed or broadcasted
-# Try to bind to the listen port 6668 as specified in the yaml
-LISTEN_PORT = 6668
-LIDAR_IP = "192.168.158.98"
+# Try to bind to the local listen port 6669
+LISTEN_PORT = 6669
+LIDAR_IP = "192.168.158.99"
 LIDAR_PORT = 6543
 
 # Protocol flags

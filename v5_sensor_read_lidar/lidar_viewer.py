@@ -17,7 +17,7 @@ class BlueSeaLidar:
         lidar_ip,
         local_ip,
         lidar_port=6543,
-        listen_port=6668,
+        listen_port=6669,
         frame_package_num=180,
         socket_timeout=1.0,
     ):
@@ -221,7 +221,7 @@ class LidarViewerGUI:
         ctrl_frame.pack(fill=tk.X)
 
         ttk.Label(ctrl_frame, text="雷达IP:").pack(side=tk.LEFT, padx=5)
-        self.lidar_ip_var = tk.StringVar(value="192.168.158.98")
+        self.lidar_ip_var = tk.StringVar(value="192.168.158.99")
         ttk.Entry(ctrl_frame, textvariable=self.lidar_ip_var, width=16).pack(side=tk.LEFT, padx=5)
 
         ttk.Label(ctrl_frame, text="本机IP:").pack(side=tk.LEFT, padx=5)
@@ -233,7 +233,7 @@ class LidarViewerGUI:
         ttk.Entry(ctrl_frame, textvariable=self.lidar_port_var, width=8).pack(side=tk.LEFT, padx=5)
 
         ttk.Label(ctrl_frame, text="监听端口:").pack(side=tk.LEFT, padx=5)
-        self.listen_port_var = tk.IntVar(value=6668)
+        self.listen_port_var = tk.IntVar(value=6669)
         ttk.Entry(ctrl_frame, textvariable=self.listen_port_var, width=8).pack(side=tk.LEFT, padx=5)
 
         ctrl_frame_2 = ttk.Frame(self.root, padding=(10, 0, 10, 10))

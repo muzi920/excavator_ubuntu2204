@@ -13,7 +13,7 @@ v13_inclinometer_reader:
 v13_lidar_reader:
   ros__parameters:
     listen_port: 6668
-    lidar_ip: "192.168.158.98"
+    lidar_ip: "192.168.158.99"
     lidar_port: 6543
     topic_name: "/v13/lidar/points"
     status_topic: "/v13/lidar/status"
@@ -21,7 +21,7 @@ v13_lidar_reader:
 v13_lidar_imu_reader:
   ros__parameters:
     listen_port: 6668
-    lidar_ip: "192.168.158.98"
+    lidar_ip: "192.168.158.99"
     lidar_port: 6543
     topic_name: "/v13/lidar/imu"
     status_topic: "/v13/lidar_imu/status"

@@ -7,8 +7,8 @@ import os
 from datetime import datetime
 
 # Constants matching the C++ SDK
-LISTEN_PORT = 6668
-LIDAR_IP = "192.168.158.98"
+LISTEN_PORT = 6669
+LIDAR_IP = "192.168.158.99"
 LIDAR_PORT = 6543
 
 def get_log_file():

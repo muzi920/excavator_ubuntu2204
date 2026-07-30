@@ -1,0 +1,37 @@
+**__pycache__**
+**build**
+**egg-info**
+**dist**
+data/
+*.pyc
+venv/
+*.idea/
+*.so
+*.yaml
+*.sh
+*.pth
+*.pkl
+*.zip
+*.bin
+output
+version.py
+# Checkpoints and output logs
+output/
+*.pth
+*.pt
+
+# Dataset caches and indices
+data/
+*.npy
+*.bin
+*.pkl
+gt_database/
+
+# OS generated files
+.DS_Store
+*.swp
+
+# Python caches
+__pycache__/
+*.py[cod]
+*$py.class

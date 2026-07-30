@@ -47,7 +47,7 @@ from templates.pointcloud_transform import PointCloudTransform
 
 # LIDAR 协议常量
 LIDARPOINTCLOUD = 0x01
-LIDAR_IP = "192.168.158.98"
+LIDAR_IP = "192.168.158.99"
 LIDAR_PORT = 6543
 
 class Ros2DataPublisher(Node):
@@ -60,8 +60,9 @@ class Ros2DataPublisher(Node):
         self.pub_cam2 = self.create_publisher(Image, 'camera2/image_raw', 10)
         self.pub_cam_hik = self.create_publisher(Image, 'camera_hik/image_raw', 10)
         
+        # 发布: 默认 /lidar/points 现为 odom 坐标系 (用于录制静止环境)，新增 _base_link 话题
         self.pub_lidar = self.create_publisher(PointCloud2, 'lidar/points', 10)
-        self.pub_lidar_odom = self.create_publisher(PointCloud2, 'lidar/points_odom', 10)
+        self.pub_lidar_base_link = self.create_publisher(PointCloud2, 'lidar/points_base_link', 10)
         self.pub_elevation = self.create_publisher(Image, 'lidar/elevation_map', 10)
         
         self.pub_joint = self.create_publisher(JointState, 'excavator/joint_states', 10)
@@ -177,7 +178,7 @@ class Ros2DataPublisher(Node):
         
         dt = np.dtype([('x', np.float32), ('y', np.float32), ('z', np.float32), ('rgb', np.uint32)])
         
-        # 1. 发布 base_link 下的点云
+        # 1. 发布 base_link 下的点云 (用于不需要全局静止的场景)
         msg_base = PointCloud2()
         msg_base.header.stamp = self.get_clock().now().to_msg()
         msg_base.header.frame_id = "base_link"
@@ -200,9 +201,9 @@ class Ros2DataPublisher(Node):
         pc_data_base['z'] = pts_base_link[:, 2]
         pc_data_base['rgb'] = rgb_vals
         msg_base.data = pc_data_base.tobytes()
-        self.pub_lidar.publish(msg_base)
+        self.pub_lidar_base_link.publish(msg_base)
         
-        # 2. 计算并发布 odom 下的点云
+        # 2. 计算并发布 odom 下的点云 (默认 /lidar/points，方便录包时环境静止)
         msg_odom = PointCloud2()
         msg_odom.header.stamp = msg_base.header.stamp
         msg_odom.header.frame_id = "odom"
@@ -234,7 +235,7 @@ class Ros2DataPublisher(Node):
         msg_odom.data = pc_data_odom.tobytes()
         
         # 移除时间锁限制，因为我们现在强制清空缓存，单帧点云数量很小，完全可以实时双发
-        self.pub_lidar_odom.publish(msg_odom)
+        self.pub_lidar.publish(msg_odom)
         
         # 将过滤后的点云数据送入高程图线程进行 2D 转换 (依然用 base_link 的，保证高程图一直居中)
         if hasattr(self, 'elevation_callback') and self.elevation_callback:
@@ -648,8 +649,11 @@ class V11MultimodalGUI:
                         self.sensor_data["回转"]["yaw"] = swing_deg
                         self.sensor_data["回转"]["yaw_rate"] = w_yaw
                         self.sensor_data["回转"]["ts"] = time.time()
-                        # V4 控制器中：正右负左。而 ROS TF 中：左(CCW)为正。所以加负号。
-                        self.last_yaw_rad = -math.radians(swing_deg)
+                        
+                        # 修复: 当左旋转(逆时针)时，如果环境反而向右旋转(反转了180度)，
+                        # 说明计算矩阵时传入的 yaw 符号反了，导致过补偿/反向补偿。
+                        # 这里去掉负号，翻转用于生成 R_odom_base 的偏航角方向。
+                        self.last_yaw_rad = math.radians(swing_deg)
                         
                     # --- 2. 更新 TiltCompensator 并发布 Odom TF ---
                     # 转换雷达坐标系下的 IMU 数据到 base_link
