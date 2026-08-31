@@ -60,9 +60,10 @@ class Ros2DataPublisher(Node):
         self.pub_cam2 = self.create_publisher(Image, 'camera2/image_raw', 10)
         self.pub_cam_hik = self.create_publisher(Image, 'camera_hik/image_raw', 10)
         
-        # 发布: 默认 /lidar/points 现为 odom 坐标系 (用于录制静止环境)，新增 _base_link 话题
+        # 发布: /lidar/points 保持为 base_link 坐标系 (随车体转动)
+        # 发布: /lidar/points_odom 为 odom 坐标系 (根据 IMU 计算抗旋补偿后，环境静止)
         self.pub_lidar = self.create_publisher(PointCloud2, 'lidar/points', 10)
-        self.pub_lidar_base_link = self.create_publisher(PointCloud2, 'lidar/points_base_link', 10)
+        self.pub_lidar_odom = self.create_publisher(PointCloud2, 'lidar/points_odom', 10)
         self.pub_elevation = self.create_publisher(Image, 'lidar/elevation_map', 10)
         
         self.pub_joint = self.create_publisher(JointState, 'excavator/joint_states', 10)
@@ -178,7 +179,7 @@ class Ros2DataPublisher(Node):
         
         dt = np.dtype([('x', np.float32), ('y', np.float32), ('z', np.float32), ('rgb', np.uint32)])
         
-        # 1. 发布 base_link 下的点云 (用于不需要全局静止的场景)
+        # 1. 发布 base_link 下的点云 (原始标定后，随车体转动)
         msg_base = PointCloud2()
         msg_base.header.stamp = self.get_clock().now().to_msg()
         msg_base.header.frame_id = "base_link"
@@ -201,9 +202,9 @@ class Ros2DataPublisher(Node):
         pc_data_base['z'] = pts_base_link[:, 2]
         pc_data_base['rgb'] = rgb_vals
         msg_base.data = pc_data_base.tobytes()
-        self.pub_lidar_base_link.publish(msg_base)
+        self.pub_lidar.publish(msg_base)
         
-        # 2. 计算并发布 odom 下的点云 (默认 /lidar/points，方便录包时环境静止)
+        # 2. 计算并发布 odom 下的点云 (根据雷达IMU旋转跟随，使得点云环境静止)
         msg_odom = PointCloud2()
         msg_odom.header.stamp = msg_base.header.stamp
         msg_odom.header.frame_id = "odom"
@@ -220,9 +221,7 @@ class Ros2DataPublisher(Node):
         if hasattr(self, 'tilt_compensator'):
             quat = self.tilt_compensator.get_quaternion(getattr(self, 'last_yaw_rad', 0.0))
         
-        # --- 修复卡顿和叠加的关键 ---
-        # 之前的 transform_to_world 是用 Python 循环/纯 scipy 实现，Numpy 矩阵计算时有严重开销
-        # 在这里我们直接手写 Numpy 高效旋转矩阵计算，大幅降低 CPU 负担
+        # --- 高效旋转矩阵计算 ---
         r_matrix = R.from_quat(quat).as_matrix()
         # pts_odom = R * P + T (T 是 0)
         pts_odom = (r_matrix @ pts_base_link.T).T
@@ -234,8 +233,8 @@ class Ros2DataPublisher(Node):
         pc_data_odom['rgb'] = rgb_vals
         msg_odom.data = pc_data_odom.tobytes()
         
-        # 移除时间锁限制，因为我们现在强制清空缓存，单帧点云数量很小，完全可以实时双发
-        self.pub_lidar.publish(msg_odom)
+        # 移除时间锁限制，单帧点云数量很小，完全可以实时双发
+        self.pub_lidar_odom.publish(msg_odom)
         
         # 将过滤后的点云数据送入高程图线程进行 2D 转换 (依然用 base_link 的，保证高程图一直居中)
         if hasattr(self, 'elevation_callback') and self.elevation_callback:
@@ -471,6 +470,12 @@ class V11MultimodalGUI:
         # 新增剧本录制相关变量
         self.is_recording = False
         self.recorded_script = []
+        self.recording_history = {
+            "bucket_arm": [],
+            "arm_boom": [],
+            "boom_swing": [],
+            "swing_yaw": []
+        }
         self.script_running = False
         
         # 保存当前实时计算的角度
@@ -857,8 +862,11 @@ class V11MultimodalGUI:
         record_frame = ttk.Frame(main_frame)
         record_frame.pack(fill=tk.X, pady=10)
         
-        self.btn_record = tk.Button(record_frame, text="🔴 开始录制剧本", command=self._toggle_recording, bg="#ffcccc", width=15)
-        self.btn_record.pack(side=tk.LEFT, padx=10)
+        self.btn_record_manual = tk.Button(record_frame, text="🔴 开始手动录制 (记录按钮动作)", command=self._toggle_recording_manual, bg="#ffcccc", width=25)
+        self.btn_record_manual.pack(side=tk.LEFT, padx=5)
+
+        self.btn_record_auto = tk.Button(record_frame, text="🔴 开始自动提取 (基于遥控动作)", command=self._toggle_recording_auto, bg="#ffebcc", width=28)
+        self.btn_record_auto.pack(side=tk.LEFT, padx=5)
         
         ttk.Button(record_frame, text="💾 保存为 JSON 剧本", command=self._save_script, width=20).pack(side=tk.LEFT, padx=10)
         
@@ -879,16 +887,103 @@ class V11MultimodalGUI:
     def _toggle_dataset_recording(self):
         pass # The UI button was removed
 
-    def _toggle_recording(self):
+    def _toggle_recording_manual(self):
+        """传统手动录制模式：只记录点击按钮时的目标值"""
+        if getattr(self, 'is_recording_auto', False):
+            messagebox.showwarning("警告", "当前正在进行自动提取录制，请先停止！")
+            return
+            
         if not self.is_recording:
             self.is_recording = True
             self.recorded_script = []
-            self.btn_record.config(text="⏹ 停止录制剧本", bg="#ccffcc")
-            messagebox.showinfo("开始录制", "已开始录制剧本。现在您下发的每一次【开始移动】都会被记录下来。")
+            self.btn_record_manual.config(text="⏹ 停止手动录制", bg="#ccffcc")
+            messagebox.showinfo("开始录制", "已开始【手动】录制剧本。现在您下发的每一次【开始移动】或【记录当前角度】都会被记录。")
         else:
             self.is_recording = False
-            self.btn_record.config(text="🔴 开始录制剧本", bg="#ffcccc")
-            messagebox.showinfo("停止录制", f"录制已停止，当前共记录了 {len(self.recorded_script)} 个动作，请点击保存。")
+            self.btn_record_manual.config(text="🔴 开始手动录制 (记录按钮动作)", bg="#ffcccc")
+            messagebox.showinfo("停止录制", f"手动录制已停止，当前共记录了 {len(self.recorded_script)} 个动作，请点击保存。")
+
+    def _toggle_recording_auto(self):
+        """基于传感器轨迹的自动防抖提取模式"""
+        if self.is_recording and not getattr(self, 'is_recording_auto', False):
+            messagebox.showwarning("警告", "当前正在进行手动录制，请先停止！")
+            return
+            
+        if not getattr(self, 'is_recording_auto', False):
+            self.is_recording = True
+            self.is_recording_auto = True
+            self.recorded_script = []
+            for k in self.recording_history:
+                self.recording_history[k].clear()
+            self.btn_record_auto.config(text="⏹ 停止自动提取", bg="#ccffcc")
+            messagebox.showinfo("开始录制", "已开始【自动】提取。请遥控挖掘机，系统将自动过滤抖动并提取动作终点生成剧本。")
+        else:
+            self.is_recording = False
+            self.is_recording_auto = False
+            self.btn_record_auto.config(text="🔴 开始自动提取 (基于遥控动作)", bg="#ffebcc")
+            self._auto_generate_script_from_history()
+            messagebox.showinfo("停止录制", f"自动提取已停止，共提取了 {len(self.recorded_script)} 个动作，请点击保存。")
+
+    def _auto_generate_script_from_history(self):
+        """基于滑动窗口方差的动作终点自动提取算法，有效过滤抖动"""
+        window_size = 10         # 约 0.5 秒 (20Hz)
+        stable_threshold = 1.0   # 极差 > 1.0 度认为是运动中
+        steady_time_s = 1.0      # 连续静止 1.0 秒才认为动作彻底结束
+        min_move_deg = 2.0       # 动作前后角度差 > 2.0 度才记录 (过滤手抖)
+        
+        script_events = []
+        
+        for joint_name, history in self.recording_history.items():
+            if len(history) < window_size:
+                continue
+                
+            is_moving = False
+            steady_start_time = None
+            last_recorded_val = sum(x[1] for x in history[:window_size]) / window_size
+            
+            for i in range(len(history) - window_size):
+                window = history[i:i+window_size]
+                vals = [x[1] for x in window]
+                ts = window[-1][0]
+                
+                val_max = max(vals)
+                val_min = min(vals)
+                val_avg = sum(vals)/len(vals)
+                
+                if val_max - val_min > stable_threshold:
+                    is_moving = True
+                    steady_start_time = None
+                else:
+                    if is_moving:
+                        if steady_start_time is None:
+                            steady_start_time = ts
+                        elif ts - steady_start_time > steady_time_s:
+                            # 动作确实结束了，检查是否产生实质位移
+                            if abs(val_avg - last_recorded_val) > min_move_deg:
+                                action = {
+                                    "joint": joint_name,
+                                    "target_val": round(val_avg, 1),
+                                    "ch1_mv": 0,
+                                    "ch2_mv": 0,
+                                    "ch3_mv": self.ch3_var.get(),
+                                    "ramp_up_s": self.ramp_up_var.get(),
+                                    "ramp_down_s": self.ramp_down_var.get(),
+                                    "is_init_step": False,
+                                    "description": f"自动提取: {joint_name} 运动至 {val_avg:.1f}°"
+                                }
+                                script_events.append((ts, action))
+                                last_recorded_val = val_avg
+                            
+                            is_moving = False
+                            steady_start_time = None
+                            
+        # 按时间戳排序以保证剧本执行顺序
+        script_events.sort(key=lambda x: x[0])
+        
+        self.recorded_script = []
+        for i, (ts, act) in enumerate(script_events):
+            act["step"] = i + 1
+            self.recorded_script.append(act)
 
     def _load_and_run_script(self):
         if self.script_running:
@@ -1196,7 +1291,7 @@ class V11MultimodalGUI:
         ramp_up = self.ramp_up_var.get()
         ramp_down = self.ramp_down_var.get()
         
-        if self.is_recording:
+        if self.is_recording and not getattr(self, 'is_recording_auto', False):
             record_item = {
                 "step": len(self.recorded_script) + 1,
                 "joint": joint_name,
@@ -1281,6 +1376,14 @@ class V11MultimodalGUI:
         self.current_angles["boom_swing"] = diff_bs
         self.current_angles["swing_yaw"] = yaw_s
         
+        # 如果正在录制，记录历史轨迹以备自动提取剧本
+        if self.is_recording and getattr(self, 'is_recording_auto', False):
+            ts = time.time()
+            self.recording_history["bucket_arm"].append((ts, diff_ba))
+            self.recording_history["arm_boom"].append((ts, diff_ab))
+            self.recording_history["boom_swing"].append((ts, diff_bs))
+            self.recording_history["swing_yaw"].append((ts, yaw_s))
+
         # 计算铲尖 3D 坐标并缓存给高程图线程
         res = self.kin.forward_kinematics_v4(diff_bs, diff_ab, diff_ba)
         bx_2d, bz = res['bucket_tip']
@@ -1294,8 +1397,21 @@ class V11MultimodalGUI:
         # 发布 ROS 2 JointState
         self.ros_node.publish_joint_state(diff_ab, diff_ba, diff_bs, yaw_s)
 
-        # 更新3D可视化
-        if self.script_running:
+        # 之前因为高频更新（10Hz~20Hz）和大量 matplotlib 重绘操作
+        # 容易导致 Tkinter 主线程拥堵，进而引发 GUI 界面响应迟钝（一顿一顿的卡顿现象）。
+        #
+        # 为了解决这个问题，我们对可视化更新频率进行限流降频：
+        # 设定 GUI 3D 画布最大更新频率为 10Hz（每 100ms 更新一次）。
+        # 注意：这不影响底层数据记录、点云和 ROS TF/话题 的高频（20Hz）发布。
+        
+        if not hasattr(self, 'last_gui_update_time'):
+            self.last_gui_update_time = 0
+            
+        current_gui_time = time.time()
+        
+        if self.script_running and (current_gui_time - self.last_gui_update_time >= 0.1):
+            self.last_gui_update_time = current_gui_time
+            
             self.live_frames.append({
                 'boom_swing': diff_bs,
                 'arm_boom': diff_ab,
@@ -1321,6 +1437,12 @@ class V11MultimodalGUI:
                 self.line_top.set_data(xs, ys)
                 self.live_traj_x.append(xs[-1])
                 self.live_traj_y.append(ys[-1])
+                
+                # 限制轨迹拖尾长度，防止随着时间推移绘图越来越慢
+                if len(self.live_traj_x) > 300:
+                    self.live_traj_x = self.live_traj_x[-300:]
+                    self.live_traj_y = self.live_traj_y[-300:]
+                
                 self.traj_top.set_data(self.live_traj_x, self.live_traj_y)
                 
                 ds_signed = [math.hypot(p[0], p[1]) * (1 if p[0] >= 0 else -1) for p in pts_3d]
@@ -1328,10 +1450,17 @@ class V11MultimodalGUI:
                 self.line_side.set_data(ds_signed, zs)
                 self.live_traj_d.append(ds_signed[-1])
                 self.live_traj_z.append(zs[-1])
+                
+                # 限制轨迹拖尾长度
+                if len(self.live_traj_d) > 300:
+                    self.live_traj_d = self.live_traj_d[-300:]
+                    self.live_traj_z = self.live_traj_z[-300:]
+                    
                 self.traj_side.set_data(self.live_traj_d, self.live_traj_z)
                 
                 self.live_3d_canvas.draw_idle()
-
+                
+        # 维持 Tkinter 定时循环，建议主循环保持在 50ms (20Hz) 以满足传感器读取需求
         self.root.after(50, self._update_loop)
 
     def on_closing(self):

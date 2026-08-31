@@ -3,7 +3,7 @@
     frame_id: map
     lidar_ip: 192.168.158.99
     lidar_port: 6543
-    listen_port: 6668
+    listen_port: 6669
     output_custommsg: true 
     output_imu: true
     output_pointcloud: true

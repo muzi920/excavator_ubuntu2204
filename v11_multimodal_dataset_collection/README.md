@@ -71,8 +71,8 @@ python3 src/shandong/v11_multimodal_dataset_collection/ros2_multimodal_gui.py
 ```
 
 **ROS2 版本特有的话题说明：**
-- `/lidar/points` (Frame: `odom`): 抗旋补偿后的点云。当挖掘机转动时，周围环境（树木、墙壁）在 RViz 中会保持静止，**推荐在录制 rosbag 时记录此话题**。
-- `/lidar/points_base_link` (Frame: `base_link`): 未进行重力与抗旋补偿的原始点云，随车体转动。
+- `/lidar/points` (Frame: `base_link`): 未进行重力与抗旋补偿的原始点云，随车体转动。**这是默认的点云话题**。
+- `/lidar/points_odom` (Frame: `odom`): 经过 IMU 抗旋补偿后的点云。当挖掘机转动时，周围环境（树木、墙壁）在 RViz 中会保持静止，适合需要全局静止坐标系的场景。
 - `/excavator/joint_states`: 实时发布的挖掘机 4 个关节角度。
 - `/camera_hik/image_raw` 等: 实时发布的摄像头图像。
 
@@ -88,5 +88,40 @@ python3 multimodal_gui.py
 ---
 
 ### 操作说明
-- 点击 **【🚀 启动端到端数据采集】** 开启所有传感器落盘。
-- 点击 **【📂 选择并执行 JSON 剧本】**（默认路径 `src/shandong/json/`）即可一键复现闭环动作。
+- **【🚀 启动端到端数据采集】**：开启所有传感器落盘（图像、点云、状态）。
+- **【📂 选择并执行 JSON 剧本】**（默认路径 `src/shandong/json/`）：一键复现闭环动作。
+- **【🔴 开始手动录制】**：传统录制模式。点击后，只有当您在界面上手动点击“开始移动”或“记录当前角度”按钮时，该动作才会被记录入剧本。
+- **【🔴 开始自动提取】**：智能录制模式。点击后，您可以自由遥控挖掘机进行挖掘作业。
+  - 系统会在后台以 20Hz 的频率记录所有关节的实时角度。
+  - 当您点击 **【⏹ 停止自动提取】** 时，系统会使用**滑动窗口方差算法**自动过滤掉您操作过程中的手抖与微小停顿，精准提取出每一个“稳态运动终点”，并自动拼接生成一份 JSON 剧本。
+  - 生成后会弹窗提示您将这份剧本保存到本地。
+
+---
+
+## 额外工具：从 ROS Bag 提取 JSON 剧本
+
+如果您在操作时并没有使用 GUI 的实时录制功能，而是使用了 `rosbag record` 录制了全量数据，您可以事后使用提供的独立脚本将录制好的 Bag 文件转换为 JSON 剧本文件。
+
+这个脚本（`bag_to_json.py`）同样内置了防抖与动作提取算法，它会分析 `/excavator/joint_states` 话题，并将运动终点提取出来。
+
+**使用方法：**
+
+```bash
+cd /media/libo/libo_sn7100/ubuntu2204/shandong_ws/src/shandong/v11_multimodal_dataset_collection
+
+python3 bag_to_json.py \
+  --bag /path/to/your/rosbag_dir \
+  --out my_script.json \
+  --threshold 1.0 \
+  --steady_time 1.0 \
+  --min_move 2.0
+```
+
+**参数说明：**
+- `--bag`: 必填，你录制的 rosbag 目录路径。
+- `--out`: 必填，提取后生成的 `.json` 剧本存放路径。
+- `--threshold`: 判定为运动的最小角度极差（默认 1.0 度）。
+- `--steady_time`: 关节保持平稳多少秒后认为一个动作结束（默认 1.0 秒）。
+- `--min_move`: 动作结束时的角度与初始角度的差值，必须大于此值才会被记录，用来过滤操作时的原地轻微抖动（默认 2.0 度）。
+
+生成 JSON 后，您可以使用任意文本编辑器打开它，根据需要手动修改或微调角度（`target_val`）及加减速时间（`ramp_up_s`）。
