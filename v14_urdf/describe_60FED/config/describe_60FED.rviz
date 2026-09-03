@@ -27,7 +27,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: ""
+    SyncSource: "RobotModel"
 Visualization Manager:
   Class: ""
   Displays:

@@ -1,0 +1,122 @@
+# ============================================================
+# v15_action_task 通用挖掘机控制库 — 默认配置文件
+#
+# 说明：后续换机型 / 改 ROS 话题 / 换连杆长度 / 改限位，
+#       只需复制此 YAML，修改数值，传给 load_config() 即可。
+#       所有数值保持与原 v10 标定、v14 URDF 协议完全一致。
+#
+# 单位约定：
+#   长度 : 米 (m)
+#   角度 : 度 (deg)
+# ============================================================
+
+v15_config_version: "1.0"
+model_name: "shandong_60FED_default"
+description: "山东 60FED 挖掘机（v10 标定参数 + v14 URDF 关节映射 + v15 标准控制协议）"
+
+
+# ============================================================
+# 1. 语义关节 ↔ URDF 关节名的绑定
+#    注意：一般 URDF 写死了关节名，这里通常不需改
+# ============================================================
+joint_mapping:
+  swing_yaw:  swing_joint    # 回转
+  boom_swing: boom_joint     # 大臂相对上车
+  arm_boom:   arm_joint      # 小臂相对大臂
+  bucket_arm: bucket_joint   # 铲斗相对小臂
+
+
+# ============================================================
+# 2. 关节限位（单位：度）
+#    语义名作为 key；每个关节给出 [min_deg, max_deg]
+# ============================================================
+joint_limits:
+  swing_yaw:
+    min_deg:  -180.0
+    max_deg:   180.0
+    description: "回转角（Z 轴）"
+  boom_swing:
+    min_deg:   -5.0
+    max_deg:   55.0
+    description: "大臂相对上车（负=抬起，正=下探）"
+  arm_boom:
+    min_deg:    0.0
+    max_deg:  130.0
+    description: "小臂相对大臂（0=伸直，大=收回）"
+  bucket_arm:
+    min_deg:  -95.0
+    max_deg:   45.0
+    description: "铲斗相对小臂（负=开斗卸料，正=收斗）"
+
+
+# ============================================================
+# 3. 连杆几何参数（与 v10 标定一致）
+#
+# 大臂折弯模型：
+#   base  -> (offset_x, offset_z) -> boom pivot
+#   boom pivot ->(L1=0.35 m, angle=0 deg)-> bend point
+#   bend point ->(L2=0.60 m, bend=46 deg, 内夹角)-> boom tip
+#   boom tip -> 小臂 (L_arm=0.44 m) -> 铲斗 (L_bucket=0.26 m)
+# ============================================================
+link_geometry:
+  offset_x:               0.25       # 回转中心 -> 大臂销轴 X 方向 (m)
+  offset_z:               0.40       # 回转中心 -> 大臂销轴 Z 方向 (m)
+  L1:                     0.35       # 大臂第一段 (销轴 -> 折弯点)
+  L2:                     0.60       # 大臂第二段 (折弯点 -> 小臂连接点)
+  boom_bend_angle_deg:   46.0        # 大臂折弯角（两段之间的结构角）
+  L_arm:                  0.44       # 小臂长度 (boom tip -> bucket pivot)
+  L_bucket:               0.26       # 铲斗长度 (bucket pivot -> tip)
+
+  # 传感器零点偏置
+  # 正向公式：abs_geom = offset - sensor_reading
+  # 逆向公式：sensor     = offset - abs_geom_theta (v15 修正了 v10 bug)
+  sensor_offsets_deg:
+    boom:    40.9
+    arm:     19.6
+    bucket: -56.2
+
+
+# ============================================================
+# 4. ROS 2 话题协议（与 v14 URDF 控制接口对齐）
+# ============================================================
+ros_protocol:
+  node_name:       "v15_urdf_controller"
+  joint_topic:     "/joint_states"      # sensor_msgs/JointState
+  frame_id:        "base_link"          # 必须与 URDF root link 一致，不能空
+  qos_depth:       10                   # KeepLast queue size（与 ros_joint_bridge 一致）
+  msg_type:        "sensor_msgs/msg/JointState"   # 仅供说明
+  first_publish_sync_from_feedback: true         # 首发时若已收到反馈，用反馈作为 cmd 初值（不动的关节保持原位）
+
+
+# ============================================================
+# 5. 默认标准姿态（动作库使用，可选）
+# ============================================================
+standard_poses:
+  init:
+    # 上电/待机：大臂略抬，小臂半收，铲斗闭合
+    swing_yaw:    0.0
+    boom_swing:   5.0
+    arm_boom:    60.0
+    bucket_arm:  10.0
+  home:
+    # 全缩回：运输姿态
+    swing_yaw:    0.0
+    boom_swing:   0.0
+    arm_boom:   120.0
+    bucket_arm:  30.0
+  cycle_transit:
+    # 循环运输：举臂避让地面、回转不刮蹭
+    swing_yaw:    0.0
+    boom_swing:  15.0
+    arm_boom:    70.0
+    bucket_arm: -20.0
+
+
+# ============================================================
+# 6. 运动层默认参数（motion / CartesianMover）
+# ============================================================
+motion_defaults:
+  at_pose_tolerance_deg:   1.0        # 到位容差（每个关节独立判断，默认 1°）
+  move_timeout_s:          3.0        # 单段运动超时
+  bucket_search_range_deg: [-70.0, 10.0]   # search_bucket_angle 扫描范围
+  bucket_search_samples:   17               # 扫描样本数（默认 17 个候选）

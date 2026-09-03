@@ -138,6 +138,7 @@ class RosJointBridge:
 
         msg = self._JointState()
         msg.header.stamp = self._node.get_clock().now().to_msg()
+        msg.header.frame_id = "base_link"
         msg.name = ["swing_joint", "boom_joint", "arm_joint", "bucket_joint"]
         msg.position = [
             self._deg_to_rad(cmd["swing_yaw"]),

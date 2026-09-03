@@ -1,4 +1,4 @@
-# v14_urdf：URDF 模型与控制接口
+# v14\_urdf：URDF 模型与控制接口
 
 这个目录提供挖掘机 URDF 模型包，用于在 ROS 2 里发布 TF、加载
 `robot_description`，并通过 `/joint_states` 驱动模型做可视化验证。
@@ -16,7 +16,8 @@
 - 标定对齐模型：`describe_60FED_calibrated.urdf`（优先对齐运动学与控制语义）
 
 <!-- prettier-ignore -->
-> [!IMPORTANT]
+
+> \[!IMPORTANT]
 > 如果你通过 SSH 连接远端机器且没有可用的图形显示（`DISPLAY` 为空），请使用
 > `headless:=true` 启动，否则 `rviz2` 和 `joint_state_publisher_gui` 会因为
 > 无法连接显示而退出。
@@ -26,26 +27,19 @@
 你需要先在工作区根目录构建并 source 环境，确保 ROS 2 能找到这个包。
 
 1. 在工作区根目录构建包：
-
    ```bash
    cd /media/libo/libo_sn7100/ubuntu2204/shandong_ws
    colcon build --packages-select describe_60FED
    ```
-
 2. source 工作区环境：
-
    ```bash
    source install/setup.bash
    ```
-
 3. 启动（有图形界面）：
-
    ```bash
    ros2 launch describe_60FED display.launch.py
    ```
-
 4. 启动（无图形界面，适合纯 SSH）：
-
    ```bash
    ros2 launch describe_60FED display.launch.py headless:=true
    ```
@@ -67,7 +61,7 @@
 
 ```bash
 ros2 launch describe_60FED display.launch.py \
-  model:=/media/libo/libo_sn7100/ubuntu2204/shandong_ws/src/shandong/v14_urdf/describe_60FED/urdf/describe_60FED.urdf
+  model:=/media/libo/libo_sn7100/ubuntu2204/shandong_ws/src/shandong/v14_urdf/describe_60FED/urdf/describe_60FED.urdf 
 ```
 
 示例：给 `v14_urdf` 下的仿真 GUI 独占 `/joint_states`。
@@ -279,7 +273,7 @@ rad = deg * pi / 180
 
 ```bash
 ros2 topic pub -1 /joint_states sensor_msgs/msg/JointState "{
-  header: {frame_id: ''},
+  header: {frame_id: 'base_link'},
   name: ['swing_joint','boom_joint','arm_joint','bucket_joint'],
   position: [0.0, 0.2, 0.5, -0.3]
 }"
@@ -480,15 +474,12 @@ GUI 里显示“当前角度”时，链路是：
 推荐按下面两步启动。
 
 1. 启动 URDF 与 RViz，但关闭 `joint_state_publisher`：
-
    ```bash
    cd /media/libo/libo_sn7100/ubuntu2204/shandong_ws
    source install/setup.bash
    ros2 launch describe_60FED display.launch.py use_joint_state_publisher:=false
    ```
-
 2. 在另一个终端启动仿真 GUI：
-
    ```bash
    cd /media/libo/libo_sn7100/ubuntu2204/shandong_ws
    source /opt/ros/humble/setup.bash
@@ -503,7 +494,8 @@ GUI 里显示“当前角度”时，链路是：
 - 原来的倾角传感器和雷达 IMU 角度来源不再参与这条仿真链路
 
 <!-- prettier-ignore -->
-> [!WARNING]
+
+> \[!WARNING]
 > 如果你当前终端使用的是 Conda 或其他非系统 Python，直接运行
 > `python3 src/shandong/v14_urdf/v4_urdf_sim_gui.py` 很可能因为 ROS 2 Humble 的
 > `rclpy` 与 Python 版本不匹配而失败。运行本目录下的 ROS 2 Python 脚本时，统一
@@ -741,58 +733,46 @@ source /opt/ros/humble/setup.bash
 ### 方式一：只验证 URDF 和 ROS 联动
 
 1. 启动模型：
-
    ```bash
    cd /media/libo/libo_sn7100/ubuntu2204/shandong_ws
    source install/setup.bash
    ros2 launch describe_60FED display.launch.py use_joint_state_publisher:=false
    ```
-
 2. 手工发布一个 `JointState`：
-
    ```bash
    ros2 topic pub -1 /joint_states sensor_msgs/msg/JointState "{
-     header: {frame_id: ''},
+     header: {frame_id: 'base_link'},
      name: ['swing_joint','boom_joint','arm_joint','bucket_joint'],
      position: [0.0, 0.2, 0.5, -0.3]
    }"
    ```
-
 3. 在 RViz 看模型是否变化。
 
 ### 方式二：验证 v4 风格语义到 URDF 的桥接
 
 1. 启动模型并关闭默认关节发布器：
-
    ```bash
    ros2 launch describe_60FED display.launch.py use_joint_state_publisher:=false
    ```
-
 2. 启动仿真 GUI：
-
    ```bash
    source /opt/ros/humble/setup.bash
    /usr/bin/python3 src/shandong/v14_urdf/v4_urdf_sim_gui.py
    ```
-
 3. 在 GUI 中输入：
    - `boom_swing`
    - `arm_boom`
    - `bucket_arm`
    - `swing_yaw`
-
 4. 在 RViz 观察模型运动。
 
 ### 方式三：验证 JSON 剧本自动控制
 
 1. 启动模型：
-
    ```bash
    ros2 launch describe_60FED display.launch.py use_joint_state_publisher:=false
    ```
-
 2. 执行剧本回放：
-
    ```bash
    source /opt/ros/humble/setup.bash
    /usr/bin/python3 src/shandong/v14_urdf/replay_json_script.py \
@@ -800,7 +780,6 @@ source /opt/ros/humble/setup.bash
      --feedback \
      --feedback-publish-mode interpolate
    ```
-
 3. 在 RViz 观察每一步动作。
 
 ## 对后续统一控制接口的意义
@@ -961,24 +940,20 @@ python3 src/shandong/v14_urdf/point_to_dig_dump_trajectory.py \
   - `bucket_arm`
 
 从几何上看，这个过程可以拆成“回转求解”和“平面逆解”两部分。当前仓库已经有可
-复用的平面逆解基础，见 [inverse_kinematics.py](file:///media/libo/libo_sn7100/ubuntu2204/shandong_ws/src/shandong/v10_cailbration_arm/inverse_kinematics.py)。
+复用的平面逆解基础，见 [inverse\_kinematics.py](file:///media/libo/libo_sn7100/ubuntu2204/shandong_ws/src/shandong/v10_cailbration_arm/inverse_kinematics.py)。
 
 建议采用下面的求解流程。
 
 1. 统一坐标系。先把点云中的 `(x, y, z)` 转换到“回转中心地面投影点”为原点的
    挖掘机工作坐标系。
 2. 求回转角。根据目标点的平面投影计算：
-
    ```text
    swing_yaw = atan2(y, x)
    ```
-
 3. 投影到机械臂工作平面。设：
-
    ```text
    r = sqrt(x^2 + y^2)
    ```
-
    然后把三维问题转成当前已支持的二维逆解问题 `(r, z)`。
 4. 给定末端姿态约束。因为仅靠 `(r, z)` 不能唯一确定铲斗姿态，所以必须给出
    挖掘点和卸料点的末端姿态角。
@@ -997,7 +972,8 @@ python3 src/shandong/v14_urdf/point_to_dig_dump_trajectory.py \
    - 回到下一次挖掘准备姿态
 
 <!-- prettier-ignore -->
-> [!IMPORTANT]
+
+> \[!IMPORTANT]
 > 两个点的 `(x, y, z)` 只能确定“去哪里”，还不能唯一确定“铲斗以什么姿态到达”。
 > 所以下一阶段实现时，除了挖掘点和卸料点坐标，你还需要同时定义挖掘姿态角和卸料
 > 姿态角，否则逆解会出现多解或解不稳定的问题。
@@ -1127,3 +1103,4 @@ source /opt/ros/humble/setup.bash
 - 将多点规划按模式拆分到独立目录：
   - `multi_dig/README.md`：[多点规划 TODO](file:///media/libo/libo_sn7100/ubuntu2204/shandong_ws/src/shandong/v14_urdf/multi_dig/README.md)
   - `mode1/README.md`：[模式 1 设计](file:///media/libo/libo_sn7100/ubuntu2204/shandong_ws/src/shandong/v14_urdf/mode1/README.md)
+
