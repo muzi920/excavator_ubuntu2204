@@ -29,6 +29,12 @@ joint_mapping:
 # ============================================================
 # 2. 关节限位（单位：度）
 #    语义名作为 key；每个关节给出 [min_deg, max_deg]
+#
+# 关节布尔方向语义（AC-7 / FR-2.1，与 semantic_moves / README_Agreement 完全一致）：
+#   swing_move(True, +angle)  = swing_yaw +angle （顺时针，从上往下看）
+#   boom_move(True,  +angle)  = boom_swing -angle （向上抬大臂）
+#   arm_move(True,   +angle)  = arm_boom   +angle （向内收小臂）
+#   bucket_move(True,+angle)  = bucket_arm +angle （向内收斗/卷铲）
 # ============================================================
 joint_limits:
   swing_yaw:
@@ -120,3 +126,338 @@ motion_defaults:
   move_timeout_s:          3.0        # 单段运动超时
   bucket_search_range_deg: [-70.0, 10.0]   # search_bucket_angle 扫描范围
   bucket_search_samples:   17               # 扫描样本数（默认 17 个候选）
+
+
+# ============================================================
+# 7. 传感器配置（FR-3.1：4倾角 + 5激光雷达 + 6相机）
+# ============================================================
+sensors:
+  tilt_sensors:
+    tilt_bucket:
+      id: tilt_bucket
+      type: tilt
+      topic: /excavator/inclinometer_pitch_deg
+      msg_type: std_msgs/msg/Float64
+      frame_id: bucket_link
+      qos_depth: 10
+      enabled: true
+      modbus_addr: "0x50"
+      array_index: 0
+      semantic_joint: bucket_arm
+      extra: {}
+    tilt_arm:
+      id: tilt_arm
+      type: tilt
+      topic: /excavator/inclinometer_pitch_deg
+      msg_type: std_msgs/msg/Float64
+      frame_id: arm_link
+      qos_depth: 10
+      enabled: true
+      modbus_addr: "0x51"
+      array_index: 1
+      semantic_joint: arm_boom
+      extra: {}
+    tilt_boom:
+      id: tilt_boom
+      type: tilt
+      topic: /excavator/inclinometer_pitch_deg
+      msg_type: std_msgs/msg/Float64
+      frame_id: boom_link
+      qos_depth: 10
+      enabled: true
+      modbus_addr: "0x52"
+      array_index: 2
+      semantic_joint: boom_swing
+      extra: {}
+    tilt_swing:
+      id: tilt
+      type: tilt
+      topic: /excavator/inclinometer_pitch_deg
+      msg_type: std_msgs/msg/Float64
+      frame_id: swing_link
+      qos_depth: 10
+      enabled: true
+      modbus_addr: "0x53"
+      array_index: 3
+      semantic_joint: swing_yaw
+      extra: {}
+  lidars:
+    lidar_single_rear:
+      id: lidar_single_rear
+      type: lidar
+      topic: /pointcloud
+      msg_type: sensor_msgs/msg/PointCloud2
+      frame_id: lidar_rear_link
+      qos_depth: 10
+      enabled: true
+      extra: {}
+    lidar_front_left:
+      id: lidar_front_left
+      type: lidar
+      topic: /lidar/front_left/points
+      msg_type: sensor_msgs/msg/PointCloud2
+      frame_id: lidar_front_left_link
+      qos_depth: 10
+      enabled: false
+      extra: {}
+    lidar_front_right:
+      id: lidar_front_right
+      type: lidar
+      topic: /lidar/front_right/points
+      msg_type: sensor_msgs/msg/PointCloud2
+      frame_id: lidar_front_right_link
+      qos_depth: 10
+      enabled: false
+      extra: {}
+    lidar_rear_left:
+      id: lidar_rear_left
+      type: lidar
+      topic: /lidar/rear_left/points
+      msg_type: sensor_msgs/msg/PointCloud2
+      frame_id: lidar_rear_left_link
+      qos_depth: 10
+      enabled: false
+      extra: {}
+    lidar_rear_right:
+      id: lidar_rear_right
+      type: lidar
+      topic: /lidar/rear_right/points
+      msg_type: sensor_msgs/msg/PointCloud2
+      frame_id: lidar_rear_right_link
+      qos_depth: 10
+      enabled: false
+      extra: {}
+  cameras:
+    cam_front_main:
+      id: cam_front_main
+      type: camera
+      topic: /sensors/camera/front_main/image_raw
+      msg_type: sensor_msgs/msg/Image
+      frame_id: cam_front_main_link
+      qos_depth: 10
+      enabled: true
+      info_topic: /sensors/camera/front_main/camera_info
+      extra: {}
+    cam_left:
+      id: cam_left
+      type: camera
+      topic: /sensors/camera/left/image_raw
+      msg_type: sensor_msgs/msg/Image
+      frame_id: cam_left_link
+      qos_depth: 10
+      enabled: true
+      info_topic: ""
+      extra: {}
+    cam_right:
+      id: cam_right
+      type: camera
+      topic: /sensors/camera/right/image_raw
+      msg_type: sensor_msgs/msg/Image
+      frame_id: cam_right_link
+      qos_depth: 10
+      enabled: true
+      info_topic: ""
+      extra: {}
+    cam_rear:
+      id: cam_rear
+      type: camera
+      topic: /sensors/camera/rear/image_raw
+      msg_type: sensor_msgs/msg/Image
+      frame_id: cam_rear_link
+      qos_depth: 10
+      enabled: false
+      info_topic: ""
+      extra: {}
+    cab_left:
+      id: cab_left
+      type: camera
+      topic: /sensors/camera/cab_left/image_raw
+      msg_type: sensor_msgs/msg/Image
+      frame_id: cab_left_link
+      qos_depth: 10
+      enabled: false
+      info_topic: ""
+      extra: {}
+    cab_right:
+      id: cab_right
+      type: camera
+      topic: /sensors/camera/cab_right/image_raw
+      msg_type: sensor_msgs/msg/Image
+      frame_id: cab_right_link
+      qos_depth: 10
+      enabled: false
+      info_topic: ""
+      extra: {}
+
+
+# ============================================================
+# 8. 外参标定（SE(3) 6-DOF 变换，至少 10 个条目）
+# ============================================================
+extrinsics:
+  ext_lidar_single_rear:
+    sensor_id: lidar_single_rear
+    parent_frame: base_link
+    child_frame: lidar_rear_link
+    x_m: -0.5500
+    y_m: -0.2000
+    z_m: 1.2712
+    yaw_rad: 0.0532
+    pitch_rad: 0.0349
+    roll_rad: 3.0316
+    enabled: true
+    note: "后向单线束激光雷达（标定值）"
+  ext_cam_front_main:
+    sensor_id: cam_front_main
+    parent_frame: base_link
+    child_frame: cam_front_main_link
+    x_m: 0.4539
+    y_m: 0.1532
+    z_m: 1.5246
+    yaw_rad: 0.0
+    pitch_rad: 1.1519
+    roll_rad: 0.0
+    enabled: true
+    note: "前视主相机（标定值）"
+  ext_cam_left:
+    sensor_id: cam_left
+    parent_frame: base_link
+    child_frame: cam_left_link
+    x_m: 0.4239
+    y_m: -0.1768
+    z_m: 1.4246
+    yaw_rad: 0.0
+    pitch_rad: 0.9250
+    roll_rad: 0.0
+    enabled: true
+    note: "左视相机（标定值）"
+  ext_cam_right:
+    sensor_id: cam_right
+    parent_frame: base_link
+    child_frame: cam_right_link
+    x_m: 0.0
+    y_m: 0.0
+    z_m: 0.0
+    yaw_rad: 0.0
+    pitch_rad: 0.0
+    roll_rad: 0.0
+    enabled: false
+    note: "右视相机（占位，待标定）"
+  ext_cam_rear:
+    sensor_id: cam_rear
+    parent_frame: base_link
+    child_frame: cam_rear_link
+    x_m: 0.0
+    y_m: 0.0
+    z_m: 0.0
+    yaw_rad: 0.0
+    pitch_rad: 0.0
+    roll_rad: 0.0
+    enabled: false
+    note: "后视相机（占位，待标定）"
+  ext_cab_left:
+    sensor_id: cab_left
+    parent_frame: base_link
+    child_frame: cab_left_link
+    x_m: 0.0
+    y_m: 0.0
+    z_m: 0.0
+    yaw_rad: 0.0
+    pitch_rad: 0.0
+    roll_rad: 0.0
+    enabled: false
+    note: "驾驶室左相机（占位，待标定）"
+  ext_cab_right:
+    sensor_id: cab_right
+    parent_frame: base_link
+    child_frame: cab_right_link
+    x_m: 0.0
+    y_m: 0.0
+    z_m: 0.0
+    yaw_rad: 0.0
+    pitch_rad: 0.0
+    roll_rad: 0.0
+    enabled: false
+    note: "驾驶室右相机（占位，待标定）"
+  ext_lidar_front_left:
+    sensor_id: lidar_front_left
+    parent_frame: base_link
+    child_frame: lidar_front_left_link
+    x_m: 0.0
+    y_m: 0.0
+    z_m: 0.0
+    yaw_rad: 0.0
+    pitch_rad: 0.0
+    roll_rad: 0.0
+    enabled: false
+    note: "前左激光雷达（占位，待标定）"
+  ext_lidar_front_right:
+    sensor_id: lidar_front_right
+    parent_frame: base_link
+    child_frame: lidar_front_right_link
+    x_m: 0.0
+    y_m: 0.0
+    z_m: 0.0
+    yaw_rad: 0.0
+    pitch_rad: 0.0
+    roll_rad: 0.0
+    enabled: false
+    note: "前右激光雷达（占位，待标定）"
+  ext_lidar_rear_left:
+    sensor_id: lidar_rear_left
+    parent_frame: base_link
+    child_frame: lidar_rear_left_link
+    x_m: 0.0
+    y_m: 0.0
+    z_m: 0.0
+    yaw_rad: 0.0
+    pitch_rad: 0.0
+    roll_rad: 0.0
+    enabled: false
+    note: "后左激光雷达（占位，待标定）"
+
+
+# ============================================================
+# 9. 倾角传感器补偿滤波参数
+# ============================================================
+tilt_compensation:
+  alpha: 0.98
+  calib_count: 50
+  gyro_deadzone_rad_s: 0.002
+  auto_calibrate_on_open: true
+  use_relative_subtraction: true
+
+
+# ============================================================
+# 10. 可达域/工作空间约束（WorkspaceChecker，任务1 FR-1）
+# ============================================================
+workspace:
+  # ===== 下挖最低点（米）=====
+  #   ground plane 基准 = z=0.0（base_link 底面在地面）
+  #   负数 = 允许铲斗下探到地面以下：
+  #     -0.10 = 下挖 10 厘米（默认，对应 TR6.3 / AC-3 真实校准）
+  #     -1.00 = 下挖 1 米（用户在测试中提到的"下挖最低点为 1m"时改成这个值）
+  #   注意：mode="dig" 时只检查 min_ground_z；mode="transit" 时同时检查下面的 min_transit_z（转运禁止撞地）
+  min_ground_z:              -0.1
+  # 转运姿态的最小离地高度（米）。转运任务下 z 必须 ≥ 此值，避免小臂/铲斗在移动中刮蹭地面
+  min_transit_z:              0.3
+  # 奇异位姿 margin：最小数值 + 占最大臂展的比例比例取最大值使用
+  singularity_margin_min_m:   0.02
+  singularity_margin_ratio:   0.01
+
+
+# ============================================================
+# 11. 轨迹规划默认参数（TrajectoryPlanner，任务2 FR-3）
+# ============================================================
+trajectory:
+  default_strategy: "lerp"    # 默认策略："lerp"（液压均匀）或 "trapezoidal"（加/减速限幅）
+  lerp_step_deg: 5.0          # lerp 策略：关节空间最大角位移的等分步长（度）
+  max_speed_deg_s:            # 梯形策略：每个关节的最大角速度（度/秒）
+    swing_yaw:    15
+    boom_swing:   20
+    arm_boom:     30
+    bucket_arm:   30
+  accel_deg_s2:               # 梯形策略：每个关节的最大角加速度（度/秒²）
+    swing_yaw:    30
+    boom_swing:   40
+    arm_boom:     60
+    bucket_arm:   60

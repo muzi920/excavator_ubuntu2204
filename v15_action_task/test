@@ -1,0 +1,60 @@
+
+# ── 1. 单独回转 30°（顺时针 +0.5236 rad）──
+ros2 topic pub -1 /v15/cmd/joint_states sensor_msgs/msg/JointState \
+  "{header: {frame_id: base_link},
+    name: ['swing_joint','boom_joint','arm_joint','bucket_joint'],
+    position: [0.5236, 0.0873, 1.0472, 0.1745]}"
+
+# ── 2. 单独抬大臂（-10° = -0.1745 rad，向上抬）──
+ros2 topic pub -1 /v15/cmd/joint_states sensor_msgs/msg/JointState \
+  "{header: {frame_id: base_link},
+    name: ['swing_joint','boom_joint','arm_joint','bucket_joint'],
+    position: [0.0, -0.1745, 1.0472, 0.1745]}"
+
+# ── 3. 单独压大臂（+20° = +0.3491 rad，向下压）──
+ros2 topic pub -1 /v15/cmd/joint_states sensor_msgs/msg/JointState \
+  "{header: {frame_id: base_link},
+    name: ['swing_joint','boom_joint','arm_joint','bucket_joint'],
+    position: [0.0, 0.3491, 1.0472, 0.1745]}"
+
+# ── 4. 单独收小臂（+60° = +1.0472 rad，向内收）──
+ros2 topic pub -1 /v15/cmd/joint_states sensor_msgs/msg/JointState \
+  "{header: {frame_id: base_link},
+    name: ['swing_joint','boom_joint','arm_joint','bucket_joint'],
+    position: [0.0, 0.0873, 1.0472, 0.1745]}"
+
+# ── 5. 单独开铲斗（-90° = -1.5708 rad，全开）──
+ros2 topic pub -1 /v15/cmd/joint_states sensor_msgs/msg/JointState \
+  "{header: {frame_id: base_link},
+    name: ['swing_joint','boom_joint','arm_joint','bucket_joint'],
+    position: [0.0, 0.0873, 1.0472, -1.5708]}"
+
+# ── 6. 单独收铲斗（+10° = +0.1745 rad，全闭）──
+ros2 topic pub -1 /v15/cmd/joint_states sensor_msgs/msg/JointState \
+  "{header: {frame_id: base_link},
+    name: ['swing_joint','boom_joint','arm_joint','bucket_joint'],
+    position: [0.0, 0.0873, 1.0472, 0.1745]}"
+
+# ── 7. INIT 姿态（回初始位：swing=0 / boom=5° / arm=60° / bucket=10°）──
+ros2 topic pub -1 /v15/cmd/joint_states sensor_msgs/msg/JointState \
+  "{header: {frame_id: base_link},
+    name: ['swing_joint','boom_joint','arm_joint','bucket_joint'],
+    position: [0.0, 0.0873, 1.0472, 0.1745]}"
+
+
+
+ros2 topic pub -1 /v15/cmd/target_point geometry_msgs/msg/PointStamped \
+  "{header: {frame_id: base_link},
+    point: {x: 1.2, y: 0.0, z: 0.8}}"
+
+ros2 topic pub -1 /v15/cmd/target_point geometry_msgs/msg/PointStamped \
+  "{header: {frame_id: base_link},
+    point: {x: 0.9, y: 0.3, z: 0.3}}"
+
+ros2 topic pub -1 /v15/cmd/target_point geometry_msgs/msg/PointStamped \
+  "{header: {frame_id: base_link},
+    point: {x: 3.0, y: 0.0, z: 0.5}}"
+
+ros2 topic pub -1 /v15/cmd/target_point geometry_msgs/msg/PointStamped \
+  "{header: {frame_id: base_link},
+    point: {x: 1.0, y: 0.0, z: -0.5}}"

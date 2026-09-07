@@ -27,9 +27,16 @@ v15 motion 子包 —— 末端笛卡尔空间运动接口（高层封装）。
 """
 
 from .cartesian_mover import CartesianMover, MoveResult, move_to_cartesian
+from .workspace import WorkspaceChecker, ReachabilityReport
+from .trajectory import TrajectoryPlanner, JointTrajectoryPoint, IKPlanningResult
 
 __all__ = [
     "CartesianMover",
     "MoveResult",
     "move_to_cartesian",
+    "WorkspaceChecker",
+    "ReachabilityReport",
+    "TrajectoryPlanner",
+    "JointTrajectoryPoint",
+    "IKPlanningResult",
 ]

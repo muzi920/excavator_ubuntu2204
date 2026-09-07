@@ -216,6 +216,197 @@ class StandardPosesConfig:
     poses: Dict[str, Dict[str, float]]
 
 
+@dataclass
+class SingleSensorConfig:
+    """通用单传感器配置（超类，兼容 tilt / lidar / camera 三种类型）。"""
+
+    id: str
+    type: str
+    topic: str
+    msg_type: str
+    frame_id: str
+    qos_depth: int
+    enabled: bool
+    extra: Dict[str, Any]
+    modbus_addr: Optional[str] = None
+    array_index: Optional[int] = None
+    semantic_joint: Optional[str] = None
+    info_topic: str = ""
+
+    # ---- typed view accessors ----
+    def as_tilt(self) -> Optional["SingleSensorConfig"]:
+        if (
+            self.modbus_addr is not None
+            and self.array_index is not None
+            and self.semantic_joint is not None
+        ):
+            return self
+        return None
+
+    def as_lidar(self) -> Optional["SingleSensorConfig"]:
+        return self
+
+    def as_camera(self) -> Optional["SingleSensorConfig"]:
+        return self
+
+
+@dataclass
+class SensorsConfig:
+    """传感器集合：4倾角 + 5激光雷达 + 6相机。"""
+
+    tilt_sensors: Dict[str, SingleSensorConfig]
+    lidars: Dict[str, SingleSensorConfig]
+    cameras: Dict[str, SingleSensorConfig]
+
+    def list_tilt_ids(self) -> List[str]:
+        return list(self.tilt_sensors.keys())
+
+    def list_lidar_ids(self) -> List[str]:
+        return list(self.lidars.keys())
+
+    def list_camera_ids(self) -> List[str]:
+        return list(self.cameras.keys())
+
+    def by_id(self, sid: str) -> Optional[SingleSensorConfig]:
+        if sid in self.tilt_sensors:
+            return self.tilt_sensors[sid]
+        if sid in self.lidars:
+            return self.lidars[sid]
+        if sid in self.cameras:
+            return self.cameras[sid]
+        return None
+
+
+@dataclass
+class ExtrinsicsEntry:
+    """单个 SE(3) 6-DOF 外参标定条目。"""
+
+    sensor_id: str
+    parent_frame: str
+    child_frame: str
+    x_m: float
+    y_m: float
+    z_m: float
+    yaw_rad: float
+    pitch_rad: float
+    roll_rad: float
+    enabled: bool
+    note: str
+    quaternion_xyzw_or_none: Optional[Tuple[float, float, float, float]] = None
+    matrix_4x4_or_none: Optional[List[List[float]]] = None
+
+    def to_xyzrpy(self) -> Tuple[float, float, float, float, float, float]:
+        return (
+            float(self.x_m),
+            float(self.y_m),
+            float(self.z_m),
+            float(self.yaw_rad),
+            float(self.pitch_rad),
+            float(self.roll_rad),
+        )
+
+    def to_4x4_matrix(self) -> List[List[float]]:
+        """纯数学计算：从 x/y/z + yaw/pitch/roll 计算 4x4 SE(3) 变换矩阵。"""
+        import math
+
+        x, y, z = float(self.x_m), float(self.y_m), float(self.z_m)
+        yaw, pitch, roll = float(self.yaw_rad), float(self.pitch_rad), float(self.roll_rad)
+
+        cy, sy = math.cos(yaw), math.sin(yaw)
+        cp, sp = math.cos(pitch), math.sin(pitch)
+        cr, sr = math.cos(roll), math.sin(roll)
+
+        R00 = cy * cp
+        R01 = cy * sp * sr - sy * cr
+        R02 = cy * sp * cr + sy * sr
+        R10 = sy * cp
+        R11 = sy * sp * sr + cy * cr
+        R12 = sy * sp * cr - cy * sr
+        R20 = -sp
+        R21 = cp * sr
+        R22 = cp * cr
+
+        return [
+            [R00, R01, R02, x],
+            [R10, R11, R12, y],
+            [R20, R21, R22, z],
+            [0.0, 0.0, 0.0, 1.0],
+        ]
+
+    def to_static_transform_publisher_args(self) -> List[str]:
+        """返回 static_transform_publisher CLI 参数列表（顺序 x y z yaw pitch roll）。"""
+        return [
+            str(float(self.x_m)),
+            str(float(self.y_m)),
+            str(float(self.z_m)),
+            str(float(self.yaw_rad)),
+            str(float(self.pitch_rad)),
+            str(float(self.roll_rad)),
+        ]
+
+
+@dataclass
+class ExtrinsicsConfig:
+    """外参标定集合。"""
+
+    entries: Dict[str, ExtrinsicsEntry]
+
+    def get(self, sid: str) -> Optional[ExtrinsicsEntry]:
+        for entry in self.entries.values():
+            if entry.sensor_id == sid:
+                return entry
+        return None
+
+    def items(self):
+        return self.entries.items()
+
+    def to_launch_static_tf_nodes_yaml(self) -> str:
+        """生成 ROS 2 static_transform_publisher CLI 行（用于 launch 文件）。"""
+        lines: List[str] = []
+        for key, entry in self.entries.items():
+            if not entry.enabled:
+                continue
+            args = entry.to_static_transform_publisher_args()
+            line = (
+                f"# {key} ({entry.note})\n"
+                f"ros2 run tf2_ros static_transform_publisher "
+                f"{' '.join(args)} {entry.parent_frame} {entry.child_frame}"
+            )
+            lines.append(line)
+        return "\n\n".join(lines)
+
+
+@dataclass
+class TiltCompensationConfig:
+    """倾角传感器互补滤波 + 自动校准参数。"""
+
+    alpha: float
+    calib_count: int
+    gyro_deadzone_rad_s: float
+    auto_calibrate_on_open: bool
+    use_relative_subtraction: bool
+
+
+@dataclass
+class WorkspaceConfig:
+    """可达域/工作空间 5 层约束的配置（WorkspaceChecker）。"""
+
+    min_ground_z: float
+    min_transit_z: float
+    singularity_margin_min_m: float
+    singularity_margin_ratio: float
+
+
+@dataclass
+class TrajectoryConfig:
+    """双策略 TrajectoryPlanner 默认参数。"""
+
+    default_strategy: str
+    lerp_step_deg: float
+    max_speed_deg_s: Dict[str, float]
+    accel_deg_s2: Dict[str, float]
+
+
 # ==============================================================
 # 2. 顶层配置 dataclass
 # ==============================================================
@@ -234,6 +425,11 @@ class V15Config:
     ros: RosProtocolConfig
     motion: MotionDefaultsConfig
     standard_poses: StandardPosesConfig
+    sensors: SensorsConfig
+    extrinsics: ExtrinsicsConfig
+    tilt_compensation: TiltCompensationConfig
+    workspace: WorkspaceConfig
+    trajectory: TrajectoryConfig
     raw_dict: Dict[str, Any]  # 原始 YAML dict，供扩展调试
 
     # ---- 快捷构造函数 ----
@@ -335,6 +531,134 @@ class V15Config:
                 poses[str(name)] = {str(k): float(v) for k, v in entry.items() if k in mapping.semantic_order}
         standard_poses = StandardPosesConfig(poses=poses)
 
+        # ⑦ 传感器配置（sensors）
+        if "sensors" in d and isinstance(d["sensors"], dict):
+            raw_sensors = dict(d["sensors"])
+            _parse_sensor_entry = lambda e: SingleSensorConfig(
+                id=str(e.get("id", "")),
+                type=str(e.get("type", "")),
+                topic=str(e.get("topic", "")),
+                msg_type=str(e.get("msg_type", "")),
+                frame_id=str(e.get("frame_id", "")),
+                qos_depth=int(e.get("qos_depth", 10)),
+                enabled=bool(e.get("enabled", False)),
+                extra=dict(e.get("extra", {}) or {}),
+                modbus_addr=(str(e["modbus_addr"]) if "modbus_addr" in e and e["modbus_addr"] is not None else None),
+                array_index=(int(e["array_index"]) if "array_index" in e and e["array_index"] is not None else None),
+                semantic_joint=(str(e["semantic_joint"]) if "semantic_joint" in e and e["semantic_joint"] is not None else None),
+                info_topic=str(e.get("info_topic", "")),
+            )
+            tilt_raw = dict(raw_sensors.get("tilt_sensors", {}) or {})
+            tilt_map: Dict[str, SingleSensorConfig] = {}
+            for k, v in tilt_raw.items():
+                if isinstance(v, dict):
+                    tilt_map[str(k)] = _parse_sensor_entry(v)
+            lidar_raw = dict(raw_sensors.get("lidars", {}) or {})
+            lidar_map: Dict[str, SingleSensorConfig] = {}
+            for k, v in lidar_raw.items():
+                if isinstance(v, dict):
+                    lidar_map[str(k)] = _parse_sensor_entry(v)
+            cam_raw = dict(raw_sensors.get("cameras", {}) or {})
+            cam_map: Dict[str, SingleSensorConfig] = {}
+            for k, v in cam_raw.items():
+                if isinstance(v, dict):
+                    cam_map[str(k)] = _parse_sensor_entry(v)
+            sensors = SensorsConfig(tilt_sensors=tilt_map, lidars=lidar_map, cameras=cam_map)
+        else:
+            sensors = build_default_sensors_config()
+
+        # ⑧ 外参配置（extrinsics）
+        if "extrinsics" in d and isinstance(d["extrinsics"], dict):
+            raw_ext = dict(d["extrinsics"])
+            entries: Dict[str, ExtrinsicsEntry] = {}
+            for k, v in raw_ext.items():
+                if isinstance(v, dict):
+                    q = v.get("quaternion_xyzw", None)
+                    if isinstance(q, (list, tuple)) and len(q) >= 4:
+                        q_opt: Optional[Tuple[float, float, float, float]] = (
+                            float(q[0]), float(q[1]), float(q[2]), float(q[3])
+                        )
+                    else:
+                        q_opt = None
+                    m = v.get("matrix_4x4", None)
+                    if isinstance(m, list) and len(m) >= 4 and all(isinstance(row, list) and len(row) >= 4 for row in m):
+                        m_opt: Optional[List[List[float]]] = [
+                            [float(m[r][c]) for c in range(4)] for r in range(4)
+                        ]
+                    else:
+                        m_opt = None
+                    entries[str(k)] = ExtrinsicsEntry(
+                        sensor_id=str(v.get("sensor_id", "")),
+                        parent_frame=str(v.get("parent_frame", "")),
+                        child_frame=str(v.get("child_frame", "")),
+                        x_m=float(v.get("x_m", 0.0)),
+                        y_m=float(v.get("y_m", 0.0)),
+                        z_m=float(v.get("z_m", 0.0)),
+                        yaw_rad=float(v.get("yaw_rad", 0.0)),
+                        pitch_rad=float(v.get("pitch_rad", 0.0)),
+                        roll_rad=float(v.get("roll_rad", 0.0)),
+                        enabled=bool(v.get("enabled", False)),
+                        note=str(v.get("note", "")),
+                        quaternion_xyzw_or_none=q_opt,
+                        matrix_4x4_or_none=m_opt,
+                    )
+            extrinsics = ExtrinsicsConfig(entries=entries)
+        else:
+            extrinsics = build_default_extrinsics_config()
+
+        # ⑨ 倾角补偿（tilt_compensation）
+        if "tilt_compensation" in d and isinstance(d["tilt_compensation"], dict):
+            raw_tc = dict(d["tilt_compensation"])
+            tilt_compensation = TiltCompensationConfig(
+                alpha=float(raw_tc.get("alpha", 0.98)),
+                calib_count=int(raw_tc.get("calib_count", 50)),
+                gyro_deadzone_rad_s=float(raw_tc.get("gyro_deadzone_rad_s", 0.002)),
+                auto_calibrate_on_open=bool(raw_tc.get("auto_calibrate_on_open", True)),
+                use_relative_subtraction=bool(raw_tc.get("use_relative_subtraction", True)),
+            )
+        else:
+            tilt_compensation = build_default_tilt_compensation_config()
+
+        # ⑩ 可达域/工作空间（workspace）
+        if "workspace" in d and isinstance(d["workspace"], dict):
+            raw_ws = dict(d["workspace"])
+            workspace = WorkspaceConfig(
+                min_ground_z=float(raw_ws.get("min_ground_z", -0.1)),
+                min_transit_z=float(raw_ws.get("min_transit_z", 0.3)),
+                singularity_margin_min_m=float(raw_ws.get("singularity_margin_min_m", 0.02)),
+                singularity_margin_ratio=float(raw_ws.get("singularity_margin_ratio", 0.01)),
+            )
+        else:
+            workspace = build_default_workspace_config()
+
+        # ⑪ 轨迹规划默认参数（trajectory）
+        if "trajectory" in d and isinstance(d["trajectory"], dict):
+            raw_tr = dict(d["trajectory"])
+            raw_speed = dict(raw_tr.get("max_speed_deg_s", {}) or {})
+            raw_accel = dict(raw_tr.get("accel_deg_s2", {}) or {})
+            default_speed = {
+                "swing_yaw": 15.0, "boom_swing": 20.0, "arm_boom": 30.0, "bucket_arm": 30.0,
+            }
+            default_accel = {
+                "swing_yaw": 30.0, "boom_swing": 40.0, "arm_boom": 60.0, "bucket_arm": 60.0,
+            }
+            max_speed = {
+                k: float(raw_speed[k]) if k in raw_speed else default_speed[k]
+                for k in default_speed
+            }
+            accel = {
+                k: float(raw_accel[k]) if k in raw_accel else default_accel[k]
+                for k in default_accel
+            }
+            trajectory = TrajectoryConfig(
+                default_strategy=str(raw_tr.get("default_strategy", "lerp")),
+                lerp_step_deg=float(raw_tr.get("lerp_step_deg", 5.0)),
+                max_speed_deg_s=max_speed,
+                accel_deg_s2=accel,
+            )
+        else:
+            trajectory = build_default_trajectory_config()
+
         return V15Config(
             version=version,
             model_name=model_name,
@@ -345,6 +669,11 @@ class V15Config:
             ros=ros,
             motion=motion,
             standard_poses=standard_poses,
+            sensors=sensors,
+            extrinsics=extrinsics,
+            tilt_compensation=tilt_compensation,
+            workspace=workspace,
+            trajectory=trajectory,
             raw_dict=data,
         )
 
@@ -428,6 +757,217 @@ class V15Config:
 
 
 # ==============================================================
+# 默认构造辅助函数（当 YAML 缺新 section 时兜底生成）
+# ==============================================================
+
+
+def build_default_sensors_config() -> SensorsConfig:
+    """构造与 default_config.yaml Section 7 数值完全一致的 SensorsConfig。"""
+    _mk_sensor = lambda **kw: SingleSensorConfig(
+        id=str(kw.get("id", "")),
+        type=str(kw.get("type", "")),
+        topic=str(kw.get("topic", "")),
+        msg_type=str(kw.get("msg_type", "")),
+        frame_id=str(kw.get("frame_id", "")),
+        qos_depth=int(kw.get("qos_depth", 10)),
+        enabled=bool(kw.get("enabled", False)),
+        extra=dict(kw.get("extra", {}) or {}),
+        modbus_addr=kw.get("modbus_addr", None),
+        array_index=kw.get("array_index", None),
+        semantic_joint=kw.get("semantic_joint", None),
+        info_topic=str(kw.get("info_topic", "")),
+    )
+    tilt_sensors: Dict[str, SingleSensorConfig] = {
+        "tilt_bucket": _mk_sensor(
+            id="tilt_bucket", type="tilt", topic="/excavator/inclinometer_pitch_deg",
+            msg_type="std_msgs/msg/Float64", frame_id="bucket_link", qos_depth=10,
+            enabled=True, extra={}, modbus_addr="0x50", array_index=0, semantic_joint="bucket_arm",
+        ),
+        "tilt_arm": _mk_sensor(
+            id="tilt_arm", type="tilt", topic="/excavator/inclinometer_pitch_deg",
+            msg_type="std_msgs/msg/Float64", frame_id="arm_link", qos_depth=10,
+            enabled=True, extra={}, modbus_addr="0x51", array_index=1, semantic_joint="arm_boom",
+        ),
+        "tilt_boom": _mk_sensor(
+            id="tilt_boom", type="tilt", topic="/excavator/inclinometer_pitch_deg",
+            msg_type="std_msgs/msg/Float64", frame_id="boom_link", qos_depth=10,
+            enabled=True, extra={}, modbus_addr="0x52", array_index=2, semantic_joint="boom_swing",
+        ),
+        "tilt_swing": _mk_sensor(
+            id="tilt_swing", type="tilt", topic="/excavator/inclinometer_pitch_deg",
+            msg_type="std_msgs/msg/Float64", frame_id="swing_link", qos_depth=10,
+            enabled=True, extra={}, modbus_addr="0x53", array_index=3, semantic_joint="swing_yaw",
+        ),
+    }
+    lidars: Dict[str, SingleSensorConfig] = {
+        "lidar_single_rear": _mk_sensor(
+            id="lidar_single_rear", type="lidar", topic="/pointcloud",
+            msg_type="sensor_msgs/msg/PointCloud2", frame_id="lidar_rear_link",
+            qos_depth=10, enabled=True, extra={},
+        ),
+        "lidar_front_left": _mk_sensor(
+            id="lidar_front_left", type="lidar", topic="/lidar/front_left/points",
+            msg_type="sensor_msgs/msg/PointCloud2", frame_id="lidar_front_left_link",
+            qos_depth=10, enabled=False, extra={},
+        ),
+        "lidar_front_right": _mk_sensor(
+            id="lidar_front_right", type="lidar", topic="/lidar/front_right/points",
+            msg_type="sensor_msgs/msg/PointCloud2", frame_id="lidar_front_right_link",
+            qos_depth=10, enabled=False, extra={},
+        ),
+        "lidar_rear_left": _mk_sensor(
+            id="lidar_rear_left", type="lidar", topic="/lidar/rear_left/points",
+            msg_type="sensor_msgs/msg/PointCloud2", frame_id="lidar_rear_left_link",
+            qos_depth=10, enabled=False, extra={},
+        ),
+        "lidar_rear_right": _mk_sensor(
+            id="lidar_rear_right", type="lidar", topic="/lidar/rear_right/points",
+            msg_type="sensor_msgs/msg/PointCloud2", frame_id="lidar_rear_right_link",
+            qos_depth=10, enabled=False, extra={},
+        ),
+    }
+    cameras: Dict[str, SingleSensorConfig] = {
+        "cam_front_main": _mk_sensor(
+            id="cam_front_main", type="camera", topic="/sensors/camera/front_main/image_raw",
+            msg_type="sensor_msgs/msg/Image", frame_id="cam_front_main_link",
+            qos_depth=10, enabled=True, info_topic="/sensors/camera/front_main/camera_info", extra={},
+        ),
+        "cam_left": _mk_sensor(
+            id="cam_left", type="camera", topic="/sensors/camera/left/image_raw",
+            msg_type="sensor_msgs/msg/Image", frame_id="cam_left_link",
+            qos_depth=10, enabled=True, info_topic="", extra={},
+        ),
+        "cam_right": _mk_sensor(
+            id="cam_right", type="camera", topic="/sensors/camera/right/image_raw",
+            msg_type="sensor_msgs/msg/Image", frame_id="cam_right_link",
+            qos_depth=10, enabled=True, info_topic="", extra={},
+        ),
+        "cam_rear": _mk_sensor(
+            id="cam_rear", type="camera", topic="/sensors/camera/rear/image_raw",
+            msg_type="sensor_msgs/msg/Image", frame_id="cam_rear_link",
+            qos_depth=10, enabled=False, info_topic="", extra={},
+        ),
+        "cab_left": _mk_sensor(
+            id="cab_left", type="camera", topic="/sensors/camera/cab_left/image_raw",
+            msg_type="sensor_msgs/msg/Image", frame_id="cab_left_link",
+            qos_depth=10, enabled=False, info_topic="", extra={},
+        ),
+        "cab_right": _mk_sensor(
+            id="cab_right", type="camera", topic="/sensors/camera/cab_right/image_raw",
+            msg_type="sensor_msgs/msg/Image", frame_id="cab_right_link",
+            qos_depth=10, enabled=False, info_topic="", extra={},
+        ),
+    }
+    return SensorsConfig(tilt_sensors=tilt_sensors, lidars=lidars, cameras=cameras)
+
+
+def build_default_extrinsics_config() -> ExtrinsicsConfig:
+    """构造与 default_config.yaml Section 8 数值完全一致的 ExtrinsicsConfig（10 条目）。"""
+    _mk = lambda **kw: ExtrinsicsEntry(
+        sensor_id=str(kw.get("sensor_id", "")),
+        parent_frame=str(kw.get("parent_frame", "base_link")),
+        child_frame=str(kw.get("child_frame", "")),
+        x_m=float(kw.get("x_m", 0.0)),
+        y_m=float(kw.get("y_m", 0.0)),
+        z_m=float(kw.get("z_m", 0.0)),
+        yaw_rad=float(kw.get("yaw_rad", 0.0)),
+        pitch_rad=float(kw.get("pitch_rad", 0.0)),
+        roll_rad=float(kw.get("roll_rad", 0.0)),
+        enabled=bool(kw.get("enabled", False)),
+        note=str(kw.get("note", "")),
+        quaternion_xyzw_or_none=None,
+        matrix_4x4_or_none=None,
+    )
+    entries: Dict[str, ExtrinsicsEntry] = {
+        "ext_lidar_single_rear": _mk(
+            sensor_id="lidar_single_rear", parent_frame="base_link", child_frame="lidar_rear_link",
+            x_m=-0.5500, y_m=-0.2000, z_m=1.2712, yaw_rad=0.0532, pitch_rad=0.0349, roll_rad=3.0316,
+            enabled=True, note="后向单线束激光雷达（标定值）",
+        ),
+        "ext_cam_front_main": _mk(
+            sensor_id="cam_front_main", parent_frame="base_link", child_frame="cam_front_main_link",
+            x_m=0.4539, y_m=0.1532, z_m=1.5246, yaw_rad=0.0, pitch_rad=1.1519, roll_rad=0.0,
+            enabled=True, note="前视主相机（标定值）",
+        ),
+        "ext_cam_left": _mk(
+            sensor_id="cam_left", parent_frame="base_link", child_frame="cam_left_link",
+            x_m=0.4239, y_m=-0.1768, z_m=1.4246, yaw_rad=0.0, pitch_rad=0.9250, roll_rad=0.0,
+            enabled=True, note="左视相机（标定值）",
+        ),
+        "ext_cam_right": _mk(
+            sensor_id="cam_right", parent_frame="base_link", child_frame="cam_right_link",
+            enabled=False, note="右视相机（占位，待标定）",
+        ),
+        "ext_cam_rear": _mk(
+            sensor_id="cam_rear", parent_frame="base_link", child_frame="cam_rear_link",
+            enabled=False, note="后视相机（占位，待标定）",
+        ),
+        "ext_cab_left": _mk(
+            sensor_id="cab_left", parent_frame="base_link", child_frame="cab_left_link",
+            enabled=False, note="驾驶室左相机（占位，待标定）",
+        ),
+        "ext_cab_right": _mk(
+            sensor_id="cab_right", parent_frame="base_link", child_frame="cab_right_link",
+            enabled=False, note="驾驶室右相机（占位，待标定）",
+        ),
+        "ext_lidar_front_left": _mk(
+            sensor_id="lidar_front_left", parent_frame="base_link", child_frame="lidar_front_left_link",
+            enabled=False, note="前左激光雷达（占位，待标定）",
+        ),
+        "ext_lidar_front_right": _mk(
+            sensor_id="lidar_front_right", parent_frame="base_link", child_frame="lidar_front_right_link",
+            enabled=False, note="前右激光雷达（占位，待标定）",
+        ),
+        "ext_lidar_rear_left": _mk(
+            sensor_id="lidar_rear_left", parent_frame="base_link", child_frame="lidar_rear_left_link",
+            enabled=False, note="后左激光雷达（占位，待标定）",
+        ),
+    }
+    return ExtrinsicsConfig(entries=entries)
+
+
+def build_default_tilt_compensation_config() -> TiltCompensationConfig:
+    """构造与 default_config.yaml Section 9 数值完全一致的 TiltCompensationConfig。"""
+    return TiltCompensationConfig(
+        alpha=0.98,
+        calib_count=50,
+        gyro_deadzone_rad_s=0.002,
+        auto_calibrate_on_open=True,
+        use_relative_subtraction=True,
+    )
+
+
+def build_default_workspace_config() -> WorkspaceConfig:
+    """构造与 default_config.yaml Section 10 数值完全一致的 WorkspaceConfig。"""
+    return WorkspaceConfig(
+        min_ground_z=-0.1,
+        min_transit_z=0.3,
+        singularity_margin_min_m=0.02,
+        singularity_margin_ratio=0.01,
+    )
+
+
+def build_default_trajectory_config() -> TrajectoryConfig:
+    """构造与 default_config.yaml Section 11 数值完全一致的 TrajectoryConfig。"""
+    return TrajectoryConfig(
+        default_strategy="lerp",
+        lerp_step_deg=5.0,
+        max_speed_deg_s={
+            "swing_yaw": 15.0,
+            "boom_swing": 20.0,
+            "arm_boom": 30.0,
+            "bucket_arm": 30.0,
+        },
+        accel_deg_s2={
+            "swing_yaw": 30.0,
+            "boom_swing": 40.0,
+            "arm_boom": 60.0,
+            "bucket_arm": 60.0,
+        },
+    )
+
+
+# ==============================================================
 # 内置默认配置 dict（当 yaml 模块不可用 + default_config.yaml 无法解析时使用）
 #   —— 数值与 config/default_config.yaml 完全等价。
 # ==============================================================
@@ -477,6 +1017,64 @@ BUILTIN_DEFAULT_CONFIG_DICT: Dict[str, Any] = {
         "move_timeout_s": 3.0,
         "bucket_search_range_deg": [-70.0, 10.0],
         "bucket_search_samples": 17,
+    },
+    "sensors": {
+        "tilt_sensors": {
+            "tilt_bucket": {"id":"tilt_bucket","type":"tilt","topic":"/excavator/inclinometer_pitch_deg","msg_type":"std_msgs/msg/Float64","frame_id":"bucket_link","qos_depth":10,"enabled":True,"modbus_addr":"0x50","array_index":0,"semantic_joint":"bucket_arm","extra":{}},
+            "tilt_arm":    {"id":"tilt_arm","type":"tilt","topic":"/excavator/inclinometer_pitch_deg","msg_type":"std_msgs/msg/Float64","frame_id":"arm_link","qos_depth":10,"enabled":True,"modbus_addr":"0x51","array_index":1,"semantic_joint":"arm_boom","extra":{}},
+            "tilt_boom":   {"id":"tilt_boom","type":"tilt","topic":"/excavator/inclinometer_pitch_deg","msg_type":"std_msgs/msg/Float64","frame_id":"boom_link","qos_depth":10,"enabled":True,"modbus_addr":"0x52","array_index":2,"semantic_joint":"boom_swing","extra":{}},
+            "tilt_swing":  {"id":"tilt_swing","type":"tilt","topic":"/excavator/inclinometer_pitch_deg","msg_type":"std_msgs/msg/Float64","frame_id":"swing_link","qos_depth":10,"enabled":True,"modbus_addr":"0x53","array_index":3,"semantic_joint":"swing_yaw","extra":{}},
+        },
+        "lidars": {
+            "lidar_single_rear": {"id":"lidar_single_rear","type":"lidar","topic":"/pointcloud","msg_type":"sensor_msgs/msg/PointCloud2","frame_id":"lidar_rear_link","qos_depth":10,"enabled":True,"extra":{}},
+            "lidar_front_left":  {"id":"lidar_front_left","type":"lidar","topic":"/lidar/front_left/points","msg_type":"sensor_msgs/msg/PointCloud2","frame_id":"lidar_front_left_link","qos_depth":10,"enabled":False,"extra":{}},
+            "lidar_front_right": {"id":"lidar_front_right","type":"lidar","topic":"/lidar/front_right/points","msg_type":"sensor_msgs/msg/PointCloud2","frame_id":"lidar_front_right_link","qos_depth":10,"enabled":False,"extra":{}},
+            "lidar_rear_left":   {"id":"lidar_rear_left","type":"lidar","topic":"/lidar/rear_left/points","msg_type":"sensor_msgs/msg/PointCloud2","frame_id":"lidar_rear_left_link","qos_depth":10,"enabled":False,"extra":{}},
+            "lidar_rear_right":  {"id":"lidar_rear_right","type":"lidar","topic":"/lidar/rear_right/points","msg_type":"sensor_msgs/msg/PointCloud2","frame_id":"lidar_rear_right_link","qos_depth":10,"enabled":False,"extra":{}},
+        },
+        "cameras": {
+            "cam_front_main": {"id":"cam_front_main","type":"camera","topic":"/sensors/camera/front_main/image_raw","msg_type":"sensor_msgs/msg/Image","frame_id":"cam_front_main_link","qos_depth":10,"enabled":True,"info_topic":"/sensors/camera/front_main/camera_info","extra":{}},
+            "cam_left":       {"id":"cam_left","type":"camera","topic":"/sensors/camera/left/image_raw","msg_type":"sensor_msgs/msg/Image","frame_id":"cam_left_link","qos_depth":10,"enabled":True,"info_topic":"","extra":{}},
+            "cam_right":      {"id":"cam_right","type":"camera","topic":"/sensors/camera/right/image_raw","msg_type":"sensor_msgs/msg/Image","frame_id":"cam_right_link","qos_depth":10,"enabled":True,"info_topic":"","extra":{}},
+            "cam_rear":       {"id":"cam_rear","type":"camera","topic":"/sensors/camera/rear/image_raw","msg_type":"sensor_msgs/msg/Image","frame_id":"cam_rear_link","qos_depth":10,"enabled":False,"info_topic":"","extra":{}},
+            "cab_left":       {"id":"cab_left","type":"camera","topic":"/sensors/camera/cab_left/image_raw","msg_type":"sensor_msgs/msg/Image","frame_id":"cab_left_link","qos_depth":10,"enabled":False,"info_topic":"","extra":{}},
+            "cab_right":      {"id":"cab_right","type":"camera","topic":"/sensors/camera/cab_right/image_raw","msg_type":"sensor_msgs/msg/Image","frame_id":"cab_right_link","qos_depth":10,"enabled":False,"info_topic":"","extra":{}},
+        },
+    },
+    "extrinsics": {
+        "ext_lidar_single_rear": {"sensor_id":"lidar_single_rear","parent_frame":"base_link","child_frame":"lidar_rear_link","x_m":-0.5500,"y_m":-0.2000,"z_m":1.2712,"yaw_rad":0.0532,"pitch_rad":0.0349,"roll_rad":3.0316,"enabled":True,"note":"后向单线束激光雷达（标定值）"},
+        "ext_cam_front_main":    {"sensor_id":"cam_front_main","parent_frame":"base_link","child_frame":"cam_front_main_link","x_m":0.4539,"y_m":0.1532,"z_m":1.5246,"yaw_rad":0.0,"pitch_rad":1.1519,"roll_rad":0.0,"enabled":True,"note":"前视主相机（标定值）"},
+        "ext_cam_left":          {"sensor_id":"cam_left","parent_frame":"base_link","child_frame":"cam_left_link","x_m":0.4239,"y_m":-0.1768,"z_m":1.4246,"yaw_rad":0.0,"pitch_rad":0.9250,"roll_rad":0.0,"enabled":True,"note":"左视相机（标定值）"},
+        "ext_cam_right":         {"sensor_id":"cam_right","parent_frame":"base_link","child_frame":"cam_right_link","x_m":0.0,"y_m":0.0,"z_m":0.0,"yaw_rad":0.0,"pitch_rad":0.0,"roll_rad":0.0,"enabled":False,"note":"右视相机（占位，待标定）"},
+        "ext_cam_rear":          {"sensor_id":"cam_rear","parent_frame":"base_link","child_frame":"cam_rear_link","x_m":0.0,"y_m":0.0,"z_m":0.0,"yaw_rad":0.0,"pitch_rad":0.0,"roll_rad":0.0,"enabled":False,"note":"后视相机（占位，待标定）"},
+        "ext_cab_left":          {"sensor_id":"cab_left","parent_frame":"base_link","child_frame":"cab_left_link","x_m":0.0,"y_m":0.0,"z_m":0.0,"yaw_rad":0.0,"pitch_rad":0.0,"roll_rad":0.0,"enabled":False,"note":"驾驶室左相机（占位，待标定）"},
+        "ext_cab_right":         {"sensor_id":"cab_right","parent_frame":"base_link","child_frame":"cab_right_link","x_m":0.0,"y_m":0.0,"z_m":0.0,"yaw_rad":0.0,"pitch_rad":0.0,"roll_rad":0.0,"enabled":False,"note":"驾驶室右相机（占位，待标定）"},
+        "ext_lidar_front_left":  {"sensor_id":"lidar_front_left","parent_frame":"base_link","child_frame":"lidar_front_left_link","x_m":0.0,"y_m":0.0,"z_m":0.0,"yaw_rad":0.0,"pitch_rad":0.0,"roll_rad":0.0,"enabled":False,"note":"前左激光雷达（占位，待标定）"},
+        "ext_lidar_front_right": {"sensor_id":"lidar_front_right","parent_frame":"base_link","child_frame":"lidar_front_right_link","x_m":0.0,"y_m":0.0,"z_m":0.0,"yaw_rad":0.0,"pitch_rad":0.0,"roll_rad":0.0,"enabled":False,"note":"前右激光雷达（占位，待标定）"},
+        "ext_lidar_rear_left":   {"sensor_id":"lidar_rear_left","parent_frame":"base_link","child_frame":"lidar_rear_left_link","x_m":0.0,"y_m":0.0,"z_m":0.0,"yaw_rad":0.0,"pitch_rad":0.0,"roll_rad":0.0,"enabled":False,"note":"后左激光雷达（占位，待标定）"},
+    },
+    "tilt_compensation": {
+        "alpha": 0.98,
+        "calib_count": 50,
+        "gyro_deadzone_rad_s": 0.002,
+        "auto_calibrate_on_open": True,
+        "use_relative_subtraction": True,
+    },
+    "workspace": {
+        "min_ground_z": -0.1,
+        "min_transit_z": 0.3,
+        "singularity_margin_min_m": 0.02,
+        "singularity_margin_ratio": 0.01,
+    },
+    "trajectory": {
+        "default_strategy": "lerp",
+        "lerp_step_deg": 5.0,
+        "max_speed_deg_s": {
+            "swing_yaw": 15.0, "boom_swing": 20.0, "arm_boom": 30.0, "bucket_arm": 30.0,
+        },
+        "accel_deg_s2": {
+            "swing_yaw": 30.0, "boom_swing": 40.0, "arm_boom": 60.0, "bucket_arm": 60.0,
+        },
     },
 }
 
@@ -545,6 +1143,18 @@ __all__ = [
     "RosProtocolConfig",
     "MotionDefaultsConfig",
     "StandardPosesConfig",
+    "SingleSensorConfig",
+    "SensorsConfig",
+    "ExtrinsicsEntry",
+    "ExtrinsicsConfig",
+    "TiltCompensationConfig",
+    "WorkspaceConfig",
+    "TrajectoryConfig",
+    "build_default_sensors_config",
+    "build_default_extrinsics_config",
+    "build_default_tilt_compensation_config",
+    "build_default_workspace_config",
+    "build_default_trajectory_config",
     "BUILTIN_DEFAULT_CONFIG_DICT",
     "load_config",
     "load_default_config",

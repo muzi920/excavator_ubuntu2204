@@ -19,8 +19,8 @@ CartesianMover —— 末端 笛卡尔空间运动执行器。
 from __future__ import annotations
 
 import time
-from dataclasses import dataclass
-from typing import Dict, Optional, Tuple
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional, Tuple
 
 try:
     from ..control_core import URDFController
@@ -29,10 +29,34 @@ except (ImportError, ValueError):
     from control_core import URDFController
     from kinematics import ForwardKinematics, InverseKinematics, IKSolution
 
+try:
+    from .trajectory import (
+        TrajectoryPlanner,
+        JointTrajectoryPoint,
+        IKPlanningResult,
+    )
+    _HAS_TRAJECTORY = True
+except Exception:
+    _HAS_TRAJECTORY = False
+    JointTrajectoryPoint = Any  # type: ignore
+    IKPlanningResult = Any  # type: ignore
+    TrajectoryPlanner = Any  # type: ignore
+
+try:
+    from .workspace import WorkspaceChecker, ReachabilityReport as _Rep
+    ReachabilityReport = _Rep
+    _HAS_WORKSPACE = True
+except Exception:
+    _HAS_WORKSPACE = False
+    WorkspaceChecker = Any  # type: ignore
+    ReachabilityReport = Any  # type: ignore
+
 
 @dataclass
 class MoveResult:
-    """一次 move 操作的结果。"""
+    """一次 move 操作的结果。前 8 字段（success → reason）保持顺序不变（旧 API 零 break）。
+    9/10/11 字段（尾部追加）仅在 move_to_point / 后续新接口中填充，旧 move/move_with_bucket 默认为 None。
+    """
 
     success: bool
     reached_pose_deg: Optional[Dict[str, float]]
@@ -42,6 +66,9 @@ class MoveResult:
     target_bucket_angle_deg: Optional[float]
     waited_s: float
     reason: str = ""
+    trajectory: Optional[List[Any]] = None  # List[JointTrajectoryPoint]，9
+    ik_result: Optional[Any] = None          # IKPlanningResult，10
+    reachability_report: Optional[Any] = None  # ReachabilityReport，11
 
     def __bool__(self) -> bool:
         return self.success
@@ -195,6 +222,8 @@ class CartesianMover:
         default_poll_s: float = 0.05,
         default_bucket_range: Tuple[float, float] = (-70.0, 10.0),
         default_bucket_candidates: int = 17,
+        trajectory_planner: Optional[Any] = None,
+        workspace_checker: Optional[Any] = None,
     ) -> None:
         self.ctl = controller
         self.ik = ik or InverseKinematics()
@@ -207,6 +236,208 @@ class CartesianMover:
         self.poll_s = default_poll_s
         self.bucket_range = default_bucket_range
         self.bucket_candidates = default_bucket_candidates
+        # phase3 新增：轨迹规划器 + 可达域检查器（可 None，move_to_point 中可懒构建）
+        self.trajectory_planner = trajectory_planner
+        self.workspace_checker = workspace_checker
+
+    # ── phase3 新增：setter ───────────────────────────────────
+    def set_trajectory_planner(self, planner: Optional[Any]) -> None:
+        self.trajectory_planner = planner
+
+    def set_workspace_checker(self, ws: Optional[Any]) -> None:
+        self.workspace_checker = ws
+
+    def _ensure_planner(self) -> Any:
+        """懒构建 TrajectoryPlanner（当没有显式注入时）。"""
+        if self.trajectory_planner is None and _HAS_TRAJECTORY:
+            try:
+                self.trajectory_planner = TrajectoryPlanner(
+                    workspace_checker=self.workspace_checker,
+                    ik=self.ik,
+                )
+            except Exception:
+                self.trajectory_planner = None
+        return self.trajectory_planner
+
+    # ── 高层 API: move_to_point（接口1）──────────────────────
+    def move_to_point(
+        self,
+        target_xyz: Tuple[float, float, float],
+        *,
+        mode: str = "auto",
+        bucket_guess_deg: float = -45.0,
+        strategy: Optional[str] = None,
+        execute: bool = True,
+        blocking: bool = True,
+        tolerance_deg: Optional[float] = None,
+        timeout_s: Optional[float] = None,
+    ) -> MoveResult:
+        """
+        接口1：按一个空间点 (x,y,z) 移动末端到该位置。
+
+        相对 move() 的升级：
+          - ✅ 先过可达域 5 层过滤（workspace_checker 注入后自动生效）
+          - ✅ 4 关节空间 LERP / 梯形速度 双策略轨迹规划（完整运动轨迹）
+          - ✅ 每关节单独 waypoint（单关节运动过程轨迹）
+          - ✅ 返回 trajectory / ik_result / reachability_report 三扩展字段
+
+        Args:
+            target_xyz:       (x, y, z) 目标绝对位置（米）
+            mode:             "auto" | "dig" | "transit" | "wrist"
+            bucket_guess_deg: 铲斗绝对角（度，挖掘态默认 -45）
+            strategy:         None → 用 TrajectoryPlanner.default_strategy；"lerp" / "trapezoidal"
+            execute:          True=按轨迹逐点 set_pose 发布；False=只规划不发布（轨迹仿真）
+            blocking:         仅 execute=True 时生效，True=逐点 wait，False=跳点只发终点
+            tolerance_deg / timeout_s: 复用 self 默认值，可 override
+
+        Returns:
+            MoveResult：尾部 trajectory / ik_result / reachability_report 三字段保证已填充（若有异常则为 None 并写 reason）。
+        """
+        xyz = (float(target_xyz[0]), float(target_xyz[1]), float(target_xyz[2]))
+        tol = tolerance_deg if tolerance_deg is not None else self.tol
+        tout = timeout_s if timeout_s is not None else self.timeout
+        reachability_report: Optional[Any] = None
+        ik_res: Optional[Any] = None
+        traj: Optional[List[Any]] = None
+        if not _HAS_TRAJECTORY:
+            return MoveResult(
+                success=False, reached_pose_deg=None, final_tip_xyz=None, ik_solution=None,
+                target_xyz=xyz, target_bucket_angle_deg=None, waited_s=0.0,
+                reason="trajectory module unavailable: motion.trajectory import 失败（请检查语法）",
+                trajectory=None, ik_result=None, reachability_report=None,
+            )
+        # 1) 懒构建 planner
+        planner = self._ensure_planner()
+        if planner is None:
+            return MoveResult(
+                success=False, reached_pose_deg=None, final_tip_xyz=None, ik_solution=None,
+                target_xyz=xyz, target_bucket_angle_deg=None, waited_s=0.0,
+                reason="planner unavailable: TrajectoryPlanner 构建失败",
+                trajectory=None, ik_result=None, reachability_report=None,
+            )
+        # 2) 先可达域 + IK（planning_ik_solve 已经把 reachability 做了）
+        ik_res = planner.planning_ik_solve(xyz, mode=mode, bucket_guess_deg=bucket_guess_deg)
+        if not ik_res.success:
+            reachability_report = getattr(ik_res, "reachability_report", None)
+            return MoveResult(
+                success=False, reached_pose_deg=None, final_tip_xyz=None, ik_solution=None,
+                target_xyz=xyz, target_bucket_angle_deg=getattr(ik_res, "bucket_angle_deg", None), waited_s=0.0,
+                reason=getattr(ik_res, "fail_reason", "planning_ik_solve fail"),
+                trajectory=None, ik_result=ik_res, reachability_report=reachability_report,
+            )
+        reachability_report = getattr(ik_res, "reachability_report", None)
+        target_pose = dict(ik_res.ik_pose_deg)
+        # 3.1 夹紧目标关节角（IK 可能给出超限位的解，controller.set_pose 会自动 clamp，但 wait 时 target 不一致 → 超时）
+        clamp_fn = getattr(self.ctl, "_clamp_pose", None)
+        if callable(clamp_fn):
+            try:
+                target_pose = dict(clamp_fn(target_pose))
+            except Exception:
+                pass
+        # 3.2 规划当前 pose → target_pose 的 4 关节空间轨迹
+        current_pose = self.ctl.get_pose_or_default()
+        try:
+            traj = planner.plan_segment(current_pose, target_pose, strategy=strategy)
+        except Exception as exc:
+            return MoveResult(
+                success=False, reached_pose_deg=None, final_tip_xyz=None, ik_solution=None,
+                target_xyz=xyz, target_bucket_angle_deg=getattr(ik_res, "bucket_angle_deg", None), waited_s=0.0,
+                reason=f"plan_segment 失败: {exc}",
+                trajectory=None, ik_result=ik_res, reachability_report=reachability_report,
+            )
+        if traj is None or len(traj) == 0:
+            return MoveResult(
+                success=False, reached_pose_deg=None, final_tip_xyz=None, ik_solution=None,
+                target_xyz=xyz, target_bucket_angle_deg=getattr(ik_res, "bucket_angle_deg", None), waited_s=0.0,
+                reason="plan_segment 返回空轨迹",
+                trajectory=traj, ik_result=ik_res, reachability_report=reachability_report,
+            )
+        # 4) execute：按轨迹点 set_pose（逐点 sleep dt）
+        t0 = time.monotonic()
+        waited_plan_and_exec = 0.0
+        if execute:
+            n = len(traj)
+            for i in range(n):
+                tp = traj[i]
+                pose = tp.pose_deg
+                published = self.ctl.set_pose(pose)
+                if not published:
+                    # 某个点发布失败不直接 fail，看最终是否到达
+                    pass
+                if blocking:
+                    # 计算 Δt = t_i - t_{i-1}，i=0 跳过
+                    if i > 0:
+                        dt = traj[i].time_from_start_s - traj[i-1].time_from_start_s
+                        if dt > 0:
+                            time.sleep(dt)
+            # 终点再阻塞等待到位 + poll
+            if blocking:
+                ok, waited = _run_wait_loop(
+                    self.ctl, target_pose,
+                    tolerance_deg=tol,
+                    timeout_s=max(tout, 1e-3),
+                    poll_interval_s=self.poll_s,
+                )
+                waited_plan_and_exec = time.monotonic() - t0
+                if not ok:
+                    reached = self.ctl.get_pose_or_default()
+                    try:
+                        fk_sol = self.fk.solve(
+                            boom_swing_deg=reached.get("boom_swing", 0.0),
+                            arm_boom_deg=reached.get("arm_boom", 0.0),
+                            bucket_arm_deg=reached.get("bucket_arm", 0.0),
+                            swing_yaw_deg=reached.get("swing_yaw", 0.0),
+                        )
+                        final_tip = fk_sol.bucket_tip_3d
+                    except Exception:
+                        final_tip = None
+                    return MoveResult(
+                        success=False,
+                        reached_pose_deg=reached,
+                        final_tip_xyz=final_tip,
+                        ik_solution=getattr(ik_res, "_sol", None),
+                        target_xyz=xyz,
+                        target_bucket_angle_deg=getattr(ik_res, "bucket_angle_deg", None),
+                        waited_s=waited_plan_and_exec,
+                        reason=f"终点未到位（容差 {tol}°，{tout}s 超时）",
+                        trajectory=traj,
+                        ik_result=ik_res,
+                        reachability_report=reachability_report,
+                    )
+        waited_plan_and_exec = time.monotonic() - t0
+        # 5) 收集最终信息
+        reached = self.ctl.get_pose_or_default()
+        try:
+            fk_sol = self.fk.solve(
+                boom_swing_deg=reached.get("boom_swing", 0.0),
+                arm_boom_deg=reached.get("arm_boom", 0.0),
+                bucket_arm_deg=reached.get("bucket_arm", 0.0),
+                swing_yaw_deg=reached.get("swing_yaw", 0.0),
+            )
+            final_tip = fk_sol.bucket_tip_3d
+        except Exception:
+            final_tip = None
+        # ik_solution：从 ik_res 拿原始 IKSolution（若有），兼容 MoveResult 老字段
+        ik_sol_old = None
+        if hasattr(ik_res, "__dict__"):
+            for attr_name in ("_sol", "sol", "raw_ik"):
+                v = getattr(ik_res, attr_name, None)
+                if v is not None:
+                    ik_sol_old = v
+                    break
+        return MoveResult(
+            success=True,
+            reached_pose_deg=reached,
+            final_tip_xyz=final_tip,
+            ik_solution=ik_sol_old,
+            target_xyz=xyz,
+            target_bucket_angle_deg=getattr(ik_res, "bucket_angle_deg", None),
+            waited_s=waited_plan_and_exec,
+            reason="",
+            trajectory=traj,
+            ik_result=ik_res,
+            reachability_report=reachability_report,
+        )
 
     # ── 高层 API ──────────────────────────────────────────────
 

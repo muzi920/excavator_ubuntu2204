@@ -52,6 +52,14 @@ from .primitives import (
     half_open_bucket_for_dig,
     move_joint_step,
     move_joint_steps_independent,
+    swing_move,
+    boom_move,
+    arm_move,
+    bucket_move,
+    swing_move_to,
+    boom_lift,
+    arm_extend,
+    bucket_tilt_to,
 )
 
 from .composites import (
@@ -103,6 +111,14 @@ __all__ = [
     "half_open_bucket_for_dig",
     "move_joint_step",
     "move_joint_steps_independent",
+    "swing_move",
+    "boom_move",
+    "arm_move",
+    "bucket_move",
+    "swing_move_to",
+    "boom_lift",
+    "arm_extend",
+    "bucket_tilt_to",
     # composites
     "CYCLE_TRANSIT_POSE",
     "HOME_POSE",

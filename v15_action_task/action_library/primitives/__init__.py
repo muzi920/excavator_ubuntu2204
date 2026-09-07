@@ -20,6 +20,17 @@ from .bucket_control import (
     half_open_bucket_for_dig,
 )
 
+from .semantic_moves import (
+    swing_move,
+    boom_move,
+    arm_move,
+    bucket_move,
+    swing_move_to,
+    boom_lift,
+    arm_extend,
+    bucket_tilt_to,
+)
+
 __all__ = [
     # joint_motion
     "move_joint_step",
@@ -31,4 +42,13 @@ __all__ = [
     "close_bucket",
     "full_open_bucket_for_dump",
     "half_open_bucket_for_dig",
+    # semantic_moves
+    "swing_move",
+    "boom_move",
+    "arm_move",
+    "bucket_move",
+    "swing_move_to",
+    "boom_lift",
+    "arm_extend",
+    "bucket_tilt_to",
 ]

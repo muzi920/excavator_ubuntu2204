@@ -25,6 +25,12 @@ from .swing_motion import (
     align_swing_to_point,
 )
 
+from .dig_dump_actions import (
+    CompositeActionResult,
+    move_to_dump_transit,
+    dump_material,
+)
+
 __all__ = [
     # standard_poses
     "CYCLE_TRANSIT_POSE",
@@ -39,4 +45,8 @@ __all__ = [
     # swing_motion
     "align_swing",
     "align_swing_to_point",
+    # dig_dump_actions (接口2 + 接口3)
+    "CompositeActionResult",
+    "move_to_dump_transit",
+    "dump_material",
 ]
