@@ -69,6 +69,15 @@ class Ros2DataPublisher(Node):
         self.pub_joint = self.create_publisher(JointState, 'excavator/joint_states', 10)
         self.tf_broadcaster = TransformBroadcaster(self)
         
+        # 订阅控制指令，接收目标关节角度并转换为动作
+        self.sub_cmd_joint = self.create_subscription(
+            JointState,
+            'cmd/joint_states',
+            self._cmd_joint_callback,
+            10
+        )
+        self.gui_app = None  # 将在 main() 中注入 GUI 引用
+        
         # LIDAR 到 base_link 的静态 TF (从 sensors_tf.launch.py 中提取 map -> base_link 逆矩阵等效)
         # tf2 args: [-0.5500, -0.2000, 1.2712, 0.0532, 0.0349, 3.0316] map base_link
         # 这意味着：base_link 在 map (LIDAR) 坐标系下的位姿。
@@ -102,6 +111,47 @@ class Ros2DataPublisher(Node):
         self.lidar_rot_inv = self.lidar_rot.T
         self.lidar_trans_inv = -self.lidar_rot_inv @ self.lidar_trans
         
+    def _cmd_joint_callback(self, msg: JointState):
+        """
+        接收到 cmd/joint_states 目标控制角度后，调用 GUI 的 angle_ctrl 触发底层物理动作。
+        """
+        if self.gui_app is None or not hasattr(self.gui_app, 'angle_ctrl') or self.gui_app.angle_ctrl is None:
+            return
+            
+        # Joint name 映射关系 (对齐 GUI 内部的 joint_name)
+        name_map = {
+            'boom_joint': 'boom_swing',
+            'arm_joint': 'arm_boom',
+            'bucket_joint': 'bucket_arm',
+            'swing_joint': 'swing_yaw'
+        }
+        
+        # 默认参数
+        ch1 = 0
+        ch2 = 0
+        ch3 = 2000
+        ramp_up = 0.2
+        ramp_down = 0.2
+        
+        try:
+            ch3 = self.gui_app.ch3_var.get()
+            ramp_up = self.gui_app.ramp_up_var.get()
+            ramp_down = self.gui_app.ramp_down_var.get()
+        except:
+            pass
+
+        for i, name in enumerate(msg.name):
+            if i < len(msg.position):
+                if name in name_map:
+                    joint_key = name_map[name]
+                    target_deg = math.degrees(msg.position[i])
+                    
+                    # 取消过滤，因为 v15 的 control_lib 内部有更完善的容差处理和顺序保证
+                    self.gui_app.angle_ctrl.move_joint_to_angle(
+                        joint_key, target_deg, tolerance=2.0,
+                        ch1_mv=ch1, ch2_mv=ch2, ch3_mv=ch3,
+                        ramp_up_s=ramp_up, ramp_down_s=ramp_down
+                    )
         
     def publish_odom_tf(self, quaternion):
         """
@@ -831,6 +881,9 @@ class V11MultimodalGUI:
         self.lbl_boom_swing.grid(row=0, column=1, padx=20, pady=5, sticky="w")
         self.lbl_swing_yaw = ttk.Label(status_frame, text="回转 偏航角: --°")
         self.lbl_swing_yaw.grid(row=1, column=1, padx=20, pady=5, sticky="w")
+        
+        self.lbl_bucket_tip = ttk.Label(status_frame, text="铲尖 3D 坐标: (--, --, --)")
+        self.lbl_bucket_tip.grid(row=2, column=0, columnspan=2, padx=20, pady=5, sticky="w")
 
         # --- 中间：推力配置 ---
         analog_frame = ttk.LabelFrame(main_frame, text="模拟量与柔性参数配置", padding=10)
@@ -1389,6 +1442,10 @@ class V11MultimodalGUI:
         bx_2d, bz = res['bucket_tip']
         yaw_rad = math.radians(yaw_s)
         self.current_bucket_tip_3d = (bx_2d * math.cos(yaw_rad), bx_2d * math.sin(yaw_rad), bz)
+        
+        # 更新铲尖 3D 坐标显示
+        bx_3d, by_3d, bz_3d = self.current_bucket_tip_3d
+        self.lbl_bucket_tip.config(text=f"铲尖 3D 坐标: (X: {bx_3d:.2f}m, Y: {by_3d:.2f}m, Z: {bz_3d:.2f}m)")
 
         # 记录多模态传感器状态 (10Hz~20Hz 左右)
         ts = time.time()
@@ -1518,6 +1575,7 @@ def main():
     try:
         root = tk.Tk()
         app = V11MultimodalGUI(root, ros_node)
+        ros_node.gui_app = app
         
         def on_closing():
             app.on_closing()

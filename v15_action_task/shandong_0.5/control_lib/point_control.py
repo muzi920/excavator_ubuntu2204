@@ -28,7 +28,7 @@ try:
         JOINT_4, DEFAULT_ORDER, JointAngleController,
     )
 except Exception:  # pragma: no cover
-    from angle_control import (  # type: ignore
+    from .angle_control import (  # type: ignore
         JOINT_4, DEFAULT_ORDER, JointAngleController,
     )
 
@@ -282,12 +282,14 @@ class SingleJointPointMover:
             r.reason = "no_joint_controller_bound: 先 SingleJointPointMover.bind_controller(JointAngleController(ctl))"
             return r
         t1 = time.monotonic()
+        # 使用 delay_between_joints_s 增加各关节动作间的缓冲时间
         exec_r = self.joint_ctrl.move_pose_serial(
             ik_target_pose,
             order=self.serial_order,
             tolerance_deg=tolerance_deg,
             per_joint_timeout_s=per_joint_timeout_s,
             stop_on_first_fail=stop_on_first_fail,
+            delay_between_joints_s=0.5,
         )
         r.order = list(exec_r.get("order", self.serial_order))
         r.per_joint = list(exec_r.get("per_joint", []))

@@ -42,9 +42,9 @@ joint_limits:
     max_deg:   180.0
     description: "回转角（Z 轴）"
   boom_swing:
-    min_deg:   -5.0
-    max_deg:   55.0
-    description: "大臂相对上车（负=抬起，正=下探）"
+    min_deg:    0.0
+    max_deg:   48.0
+    description: "大臂相对上车（0°=最高点完全抬起，48°=最低点压到地面）"
   arm_boom:
     min_deg:    0.0
     max_deg:  130.0

@@ -98,6 +98,19 @@ class JointAngleController:
 
         # Step1：拿到当前 4 关节（其他 3 个保持不变）
         cur_pose = self._get_current_pose()
+        
+        # 优化：如果当前角度已经满足容差要求，直接返回成功，跳过发送和等待
+        if abs(cur_pose.get(joint_name, 0.0) - target_deg) <= tol:
+            _log.info(f"[angle_ctrl] {joint_name} 已经在目标位置附近 ({cur_pose.get(joint_name, 0.0):.1f}° ~= {target_deg:.1f}°)，跳过发送。")
+            return {
+                "success": True,
+                "reason": "already_at_target",
+                "joint": joint_name,
+                "target_after_clamp_deg": target_deg,
+                "final_joint_deg": cur_pose.get(joint_name, 0.0),
+                "waited_s": 0.0,
+            }
+
         # Step2：改 1 格 + 限位夹紧
         target_pose = dict(cur_pose)
         target_pose[joint_name] = float(target_deg)
@@ -109,9 +122,12 @@ class JointAngleController:
             )
         self.last_cmd_pose = dict(clamped)
 
-        # Step3：发送（其他 3 格 == 当前 feedback → 实际上只驱动 1 个关节）
+        # Step3：发送（严格单关节发送，避免由于传感器抖动导致其他关节误触发）
         try:
-            self.ctl.set_pose(clamped)
+            if hasattr(self.ctl, "set_single_joint"):
+                self.ctl.set_single_joint(joint_name, float(clamped[joint_name]))
+            else:
+                self.ctl.set_pose(clamped)
         except Exception as e:  # pragma: no cover
             return {
                 "success": False,
@@ -139,6 +155,10 @@ class JointAngleController:
             final_pose = self._get_current_pose()
             # 只检查这个关节（其他关节默认被保持不变）
             diff = abs(float(final_pose.get(joint_name, 0.0)) - float(clamped[joint_name]))
+            
+            # (移除了每隔 1 秒补充发送指令的逻辑，因为底层 V11 GUI 自身有完整的闭环控制线程，
+            # 重复发送会导致底层的运动线程被不断中止和重启，从而陷入死循环并最终导致超时)
+                    
             if diff <= tol:
                 ok = True
                 break
@@ -168,6 +188,7 @@ class JointAngleController:
         tolerance_deg: Optional[float] = None,
         per_joint_timeout_s: Optional[float] = None,
         stop_on_first_fail: bool = True,
+        delay_between_joints_s: float = 0.5,
     ) -> Dict[str, Any]:
         """把 target_pose_deg（含任何子集/全集 4 关节）按 order 顺序逐关节单关节串行运动。
 
@@ -189,7 +210,7 @@ class JointAngleController:
         t0 = time.monotonic()
         overall_ok = True
         first_fail_reason = ""
-        for j in run_joints:
+        for i, j in enumerate(run_joints):
             r = self.move_joint(
                 j,
                 float(target_pose_deg[j]),
@@ -203,6 +224,11 @@ class JointAngleController:
                 first_fail_reason = f"[{j}] {r.get('reason', 'unknown_fail')}"
                 if stop_on_first_fail:
                     break
+            
+            # 在单关节运动之间增加保护性延迟
+            if i < len(run_joints) - 1:
+                time.sleep(delay_between_joints_s)
+
         return {
             "success": bool(overall_ok),
             "reason": first_fail_reason or "all_reached_serial",
