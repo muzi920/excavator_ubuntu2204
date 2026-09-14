@@ -48,7 +48,7 @@ joint_limits:
   arm_boom:
     min_deg:    0.0
     max_deg:  130.0
-    description: "小臂相对大臂（0=伸直，大=收回）"
+    description: "小臂相对大臂（用户物理限位，禁止修改）"
   bucket_arm:
     min_deg:  -95.0
     max_deg:   45.0

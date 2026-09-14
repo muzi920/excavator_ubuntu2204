@@ -27,7 +27,7 @@ class AngleController:
         # -------------------------------------------------------------
         self.joint_limits = {
             "boom_swing": {"min_angle":   0.0, "max_angle": 48.0},  # ★ 用户标定：0°=最高点（完全抬起），48°=最低点（压到地面）
-            "arm_boom":   {"min_angle": -5.0, "max_angle": 95.0},   # 小臂与大臂 (小臂)
+            "arm_boom":   {"min_angle": -5.0, "max_angle": 95.0},   # 小臂与大臂 (小臂)【用户物理限位，禁止修改】
             "bucket_arm": {"min_angle": -95.0, "max_angle": 20.0},  # 铲斗与小臂 (铲斗)
             "swing_yaw":  {"min_angle": -180.0, "max_angle": 180.0} # 回转偏航角 (不受限)
         }

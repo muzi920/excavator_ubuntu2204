@@ -259,3 +259,27 @@ class JointAngleController:
             except Exception:
                 continue
         return self.last_cmd_pose
+
+    # ------------------------------------------------------------------
+    # 工具：当前 V4 14 路绝对倾角传感器（小臂对地垂直闭环所需）
+    #   兼容链路：ctl.bridge.get_current_sensor_data() 或  ctl.get_current_sensor_data()
+    #   返回：{"大臂":{"pitch":..,"yaw":..,"ts":..}, "小臂":{...}, "铲斗":{...}, "回转":{...}}
+    #         任何一环取不到则返回 None（调用方会走兜底模式）
+    # ------------------------------------------------------------------
+    def _get_current_sensor_data(self) -> Optional[Dict[str, Dict[str, float]]]:
+        cands = [
+            (lambda: self.ctl.bridge.get_current_sensor_data(),  # main.py 路径: adapter.bridge.get_...
+             "ctl.bridge.get_current_sensor_data"),
+            (lambda: self.ctl.get_current_sensor_data(),        # 直连 bridge 路径
+             "ctl.get_current_sensor_data"),
+            (lambda: getattr(self.ctl, "_bridge", None) and self.ctl._bridge.get_current_sensor_data(),
+             "ctl._bridge.get_current_sensor_data"),
+        ]
+        for fn_c, name in cands:
+            try:
+                res = fn_c()
+                if isinstance(res, dict) and "小臂" in res and isinstance(res["小臂"], dict) and "pitch" in res["小臂"]:
+                    return res
+            except Exception:
+                continue
+        return None

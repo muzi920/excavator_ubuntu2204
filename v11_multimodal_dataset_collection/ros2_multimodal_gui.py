@@ -36,6 +36,7 @@ from imu_direct_swing_estimator import DirectSwingAngleEstimator, LISTEN_PORT
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image, PointCloud2, PointField, JointState
+from std_msgs.msg import Float64MultiArray, MultiArrayDimension
 from cv_bridge import CvBridge
 import std_msgs.msg
 import numpy as np
@@ -67,6 +68,10 @@ class Ros2DataPublisher(Node):
         self.pub_elevation = self.create_publisher(Image, 'lidar/elevation_map', 10)
         
         self.pub_joint = self.create_publisher(JointState, 'excavator/joint_states', 10)
+        # 新增：发布 V4 底层 14 路倾角传感器原始数据（大臂/小臂/铲斗/回转 的 pitch/yaw + 时间戳）
+        # Topic: /excavator/sensor_data  std_msgs/Float64MultiArray
+        # 布局：layout.dim[0].size = 4 部件 × layout.dim[1].size = 4 字段(pitch, yaw, ts_sec, ts_nsec)
+        self.pub_sensor = self.create_publisher(Float64MultiArray, 'excavator/sensor_data', 10)
         self.tf_broadcaster = TransformBroadcaster(self)
         
         # 订阅控制指令，接收目标关节角度并转换为动作
@@ -331,6 +336,44 @@ class Ros2DataPublisher(Node):
             math.radians(yaw_s)
         ]
         self.pub_joint.publish(msg)
+
+    def publish_sensor_data(self, sensor_data: dict) -> None:
+        """
+        发布 V4 底层 4 个部件的绝对倾角传感器原始数据（pitch/yaw + 时间戳）。
+        - Topic: /excavator/sensor_data  std_msgs/Float64MultiArray
+        - 目的：给 v15_action_task/shandong_0.5 做「小臂对地物理垂直」的传感器闭环控制。
+        - 数据布局（行优先）：
+            data[i*4 + 0] = 部件 i 的 pitch（绝对对地倾角，向下为正，度）
+            data[i*4 + 1] = 部件 i 的 yaw（绝对对地偏航角，度）
+            data[i*4 + 2] = 部件 i 更新时间戳 sec（整数部分，秒）
+            data[i*4 + 3] = 部件 i 更新时间戳 nsec（小数部分，纳秒）
+            其中部件顺序 i=0 大臂, i=1 小臂, i=2 铲斗, i=3 回转
+        """
+        parts_order = ("大臂", "小臂", "铲斗", "回转")
+        flat = []
+        now = time.time()
+        for name in parts_order:
+            d = sensor_data.get(name, {}) if isinstance(sensor_data, dict) else {}
+            pitch = float(d.get("pitch", 0.0))
+            yaw   = float(d.get("yaw",   0.0))
+            ts    = float(d.get("ts",    now))
+            sec   = float(math.floor(ts))
+            nsec  = float((ts - sec) * 1e9)
+            flat.extend([pitch, yaw, sec, nsec])
+        msg = Float64MultiArray()
+        # 两维 layout：[4 parts × 4 fields]
+        dim0 = MultiArrayDimension()
+        dim0.label = "parts"
+        dim0.size  = 4
+        dim0.stride = 4 * 4
+        dim1 = MultiArrayDimension()
+        dim1.label = "fields"
+        dim1.size  = 4
+        dim1.stride = 4
+        msg.layout.dim = [dim0, dim1]
+        msg.layout.data_offset = 0
+        msg.data = flat
+        self.pub_sensor.publish(msg)
 
 import cv2
 class VideoStreamThread(threading.Thread):
@@ -1453,6 +1496,11 @@ class V11MultimodalGUI:
         
         # 发布 ROS 2 JointState
         self.ros_node.publish_joint_state(diff_ab, diff_ba, diff_bs, yaw_s)
+        # 新增：发布 V4 绝对倾角 14 路传感器数据（给 shandong_0.5 做小臂垂直闭环）
+        try:
+            self.ros_node.publish_sensor_data(self.sensor_data)
+        except Exception as _se:
+            pass
 
         # 之前因为高频更新（10Hz~20Hz）和大量 matplotlib 重绘操作
         # 容易导致 Tkinter 主线程拥堵，进而引发 GUI 界面响应迟钝（一顿一顿的卡顿现象）。

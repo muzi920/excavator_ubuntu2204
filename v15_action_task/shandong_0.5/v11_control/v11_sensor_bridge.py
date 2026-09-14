@@ -86,15 +86,17 @@ class PointCloudXYZ:
 
 
 # ============================================================
-# 1. 线程安全缓存：最新一帧 joint + 最新一帧 pointcloud + Event
+# 1. 线程安全缓存：最新一帧 joint + 最新一帧 pointcloud + 最新一帧 sensor_data + Event
 # ============================================================
 class _FrameCache:
     def __init__(self) -> None:
         self._lock = threading.Lock()
         self._joint: Optional[SemanticJointAnglesDeg] = None
         self._pc: Optional[PointCloudXYZ] = None
+        self._sensor: Optional[Dict[str, Dict[str, float]]] = None
         self._joint_event = threading.Event()
         self._pc_event = threading.Event()
+        self._sensor_event = threading.Event()
 
     # ---- joint ----
     def set_joint(self, j: SemanticJointAnglesDeg) -> None:
@@ -129,6 +131,28 @@ class _FrameCache:
     def wait_pc(self, timeout_s: float) -> bool:
         return self._pc_event.wait(timeout=timeout_s)
 
+    # ---- sensor (V4 14 路绝对倾角) ----
+    def set_sensor(self, s: Dict[str, Dict[str, float]]) -> None:
+        with self._lock:
+            # 深拷贝，避免外部引用被改动
+            self._sensor = {
+                k: (dict(v) if isinstance(v, dict) else {})
+                for k, v in s.items()
+            }
+        self._sensor_event.set()
+
+    def get_sensor(self) -> Optional[Dict[str, Dict[str, float]]]:
+        with self._lock:
+            if self._sensor is None:
+                return None
+            return {
+                k: dict(v) if isinstance(v, dict) else {}
+                for k, v in self._sensor.items()
+            }
+
+    def wait_sensor(self, timeout_s: float) -> bool:
+        return self._sensor_event.wait(timeout=timeout_s)
+
 
 # ============================================================
 # 2. V11SensorBridge
@@ -153,6 +177,7 @@ class V11SensorBridge:
 
     # -------- 话题名 / 关节名 100% 写死来自 v11 考古 --------
     TOPIC_EXCAVATOR_JOINT_STATES: str = "/excavator/joint_states"
+    TOPIC_EXCAVATOR_SENSOR_DATA: str = "/excavator/sensor_data"
     TOPIC_LIDAR_POINTS: str = "/lidar/points"
     TOPIC_LIDAR_POINTS_ODOM: str = "/lidar/points_odom"
 
@@ -241,12 +266,18 @@ class V11SensorBridge:
         )
 
         from sensor_msgs.msg import JointState, PointCloud2  # type: ignore
+        from std_msgs.msg import Float64MultiArray  # type: ignore
         self._msg_JointState = JointState
         self._msg_PointCloud2 = PointCloud2
+        self._msg_SensorData = Float64MultiArray
 
         self._node.create_subscription(
             JointState, self.TOPIC_EXCAVATOR_JOINT_STATES,
             self._on_joint_states, qos_js,
+        )
+        self._node.create_subscription(
+            Float64MultiArray, self.TOPIC_EXCAVATOR_SENSOR_DATA,
+            self._on_sensor_data, qos_js,
         )
         self._node.create_subscription(
             PointCloud2, self.pc_topic,
@@ -254,9 +285,10 @@ class V11SensorBridge:
         )
 
         self._log.info(
-            f"[v11_bridge] Node={self.node_name} 订阅 2 条 v11 sensor topics:\n"
+            f"[v11_bridge] Node={self.node_name} 订阅 3 条 v11 sensor topics:\n"
             f"   1) {self.TOPIC_EXCAVATOR_JOINT_STATES} (JointState, 顺序按 name 对齐)\n"
-            f"   2) {self.pc_topic} (PointCloud2, step=16B  xyz+rgb)"
+            f"   2) {self.TOPIC_EXCAVATOR_SENSOR_DATA} (Float64MultiArray, V4 绝对倾角 pitch/yaw)\n"
+            f"   3) {self.pc_topic} (PointCloud2, step=16B  xyz+rgb)"
         )
 
     def start_spin_thread(self) -> None:
@@ -309,6 +341,41 @@ class V11SensorBridge:
     def has_new_pointcloud(self, since_ts: float) -> bool:
         cur = self._cache.get_pc()
         return cur is not None and cur.ts > float(since_ts)
+
+    def get_current_sensor_data(
+        self,
+        *,
+        blocking: bool = False,
+        timeout_s: float = 1.0,
+    ) -> Optional[Dict[str, Dict[str, float]]]:
+        """
+        返回 V4 底层的 4 部件绝对倾角原始数据（用于小臂垂直地面闭环）。
+        结构：{
+            "大臂": {"pitch": float度, "yaw": float度, "ts": float秒},
+            "小臂": {"pitch": float度, "yaw": float度, "ts": float秒},
+            "铲斗": {"pitch": float度, "yaw": float度, "ts": float秒},
+            "回转": {"pitch": float度, "yaw": float度, "ts": float秒},
+        }
+        """
+        if blocking:
+            self._cache.wait_sensor(timeout_s)
+        return self._cache.get_sensor()
+
+    def inject_mock_sensor_data(self, sensor_dict: Dict[str, Dict[str, float]]) -> None:
+        """仅在 use_mock=True 时，手动注入 V4 sensor_data 字典供闭环调试。"""
+        if not self.use_mock:
+            raise RuntimeError("inject_mock_sensor_data 仅在 use_mock=True 时可用")
+        # 补默认结构
+        default_parts = ("大臂", "小臂", "铲斗", "回转")
+        full = {}
+        for name in default_parts:
+            src = sensor_dict.get(name, {}) if isinstance(sensor_dict, dict) else {}
+            full[name] = {
+                "pitch": float(src.get("pitch", 0.0)),
+                "yaw":   float(src.get("yaw",   0.0)),
+                "ts":    float(src.get("ts",    time.time())),
+            }
+        self._cache.set_sensor(full)
 
     # ============================================================
     # 反向控制：纯工具函数（不发话题；请在你自己的节点里 create_publisher 用）
@@ -435,6 +502,32 @@ class V11SensorBridge:
                     pass
 
     # ============================================================
+    # 回调：/excavator/sensor_data  (Float64MultiArray, 4 parts × 4 fields)
+    # ============================================================
+    def _on_sensor_data(self, msg) -> None:
+        try:
+            data = list(getattr(msg, "data", []) or [])
+            if len(data) < 16:
+                return
+            # 顺序：i=0 大臂, i=1 小臂, i=2 铲斗, i=3 回转；每 i 段 data[i*4+0..3] = pitch,yaw,sec,nsec
+            parts_order = ("大臂", "小臂", "铲斗", "回转")
+            result: Dict[str, Dict[str, float]] = {}
+            for i, name in enumerate(parts_order):
+                pitch = float(data[i * 4 + 0])
+                yaw   = float(data[i * 4 + 1])
+                sec   = float(data[i * 4 + 2])
+                nsec  = float(data[i * 4 + 3])
+                ts    = sec + (nsec / 1e9) if nsec >= 0 else sec
+                result[name] = {"pitch": pitch, "yaw": yaw, "ts": ts}
+            self._cache.set_sensor(result)
+        except Exception as e:  # pragma: no cover
+            if self._node is not None:
+                try:
+                    self._log.error(f"[v11_bridge] _on_sensor_data: {e!r}")
+                except Exception:
+                    pass
+
+    # ============================================================
     # 回调：/lidar/points（或 odom 版）
     # 按 v11 ros2_multimodal_gui L180-L197 写死：dt=(x,y,z,rgb) 步长 16 byte
     # ============================================================
@@ -456,7 +549,7 @@ class V11SensorBridge:
                     return
             flat = np.frombuffer(data[: n_pts * step], dtype=np.uint8).reshape(n_pts, step)
             xyz_bytes = flat[:, :12]  # x,y,z 前 12B
-            xyz = xyz_bytes.view(np.float32).reshape(n_pts, 3).astype(np.float32, copy=True)
+            xyz = xyz_bytes.copy().view(np.float32).reshape(n_pts, 3).astype(np.float32, copy=True)
             rgb_raw = None
             if step >= 16:
                 # L178-L179: rgb_vals = gray<<16 | gray<<8 | gray  (UINT32 小端打包)

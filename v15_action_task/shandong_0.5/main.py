@@ -64,6 +64,13 @@ class V11ControllerAdapter:
             msg.position = [target_deg * 3.141592653589793 / 180.0]
             self.pub_cmd.publish(msg)
 
+    def get_current_sensor_data(self, *, blocking: bool = False, timeout_s: float = 1.0):
+        """桥接 bridge 的 V4 14 路绝对倾角传感器。"""
+        try:
+            return self.bridge.get_current_sensor_data(blocking=blocking, timeout_s=timeout_s)
+        except Exception:
+            return None
+
 class V15MainNode(Node):
     def __init__(self):
         super().__init__('shandong_0_5_main_node')
@@ -174,8 +181,8 @@ class V15MainNode(Node):
 
         def _exec():
             self.get_logger().info("[DumpCb] ====== 启动阶段 3 卸料线程 ======")
-            success = self.dig_ctrl.plan_and_execute_dump(dump_xyz)
-            self.get_logger().info(f"[DumpCb] ====== 阶段 3 卸料完成：success={success} ======")
+            ok, pose = self.dig_ctrl.plan_and_execute_dump(dump_xyz)
+            self.get_logger().info(f"[DumpCb] ====== 阶段 3 卸料完成：success={ok}  pose={pose} ======")
 
         self.cmd_thread = threading.Thread(target=_exec, daemon=True)
         self.cmd_thread.start()
@@ -217,14 +224,14 @@ class V15MainNode(Node):
         dig_xyz = (float(dig_x), float(dig_y), float(dig_z))
         dump_xyz = (float(dump_x), float(dump_y), float(dump_z_in))
 
-        # 2. 卸料点 z 的用户规则判断：<1.0 → 1.0；>=1.0 → 原值
-        dz_use = max(1.0, dump_xyz[2])
+        # 2. 卸料点 z 的用户规则判断：<0.5 → 0.5；>=0.5 → 原值
+        dz_use = max(0.5, dump_xyz[2])
         self.get_logger().info(
             f"[FullCycle A] ====== 收到全流程指令 ======\n"
             f"            挖掘点 dig  = ({dig_xyz[0]:.3f}, {dig_xyz[1]:.3f}, {dig_xyz[2]:.3f}) m\n"
             f"            卸料点 dump = ({dump_xyz[0]:.3f}, {dump_xyz[1]:.3f}, {dump_xyz[2]:.3f}) m  (原始)\n"
             f"            dump_z 规则判断: 原始 z={dump_xyz[2]:.3f}m  →  使用 z={dz_use:.3f}m  "
-            f"(规则: z<1→1.0, z>=1→原值)"
+            f"(规则: z<0.5→0.5, z>=0.5→原值)"
         )
 
         if self.cmd_thread and self.cmd_thread.is_alive():
@@ -248,7 +255,7 @@ class V15MainNode(Node):
         类型 B（完整闭环，用户只给 dig+角度，卸料点自动推）：
           阶段 1 挖掘 dig_xyz
             → 阶段 2 按 transit_yaw_deg 回转
-            → 阶段 3 在该回转方向正前 1.2m / 高 ≥1.0m 自动推卸料点卸料
+            → 阶段 3 在该回转方向正前 1.2m / 高 ≥0.5m 自动推卸料点卸料
             → 阶段 4 回正（下一目标点准备位）
         消息 Float64MultiArray.data = [dig_x, dig_y, dig_z, transit_yaw_deg]  (size=4)
         """
@@ -278,7 +285,7 @@ class V15MainNode(Node):
             f"[FullCycle B] ====== 收到完整闭环指令 ======\n"
             f"            挖掘点 dig          = ({dig_xyz[0]:.3f}, {dig_xyz[1]:.3f}, {dig_xyz[2]:.3f}) m\n"
             f"            回转角度 swing      = {transit_yaw_deg:.1f}°\n"
-            f"            （后续会: 回转到 {transit_yaw_deg:.1f}° → 该方向正前 1.2m × 高 ≥1.0m 自动推卸料点 → 卸料 → 回正，不用分步）"
+            f"            （后续会: 回转到 {transit_yaw_deg:.1f}° → 该方向正前 1.2m × 高 ≥0.5m 自动推卸料点 → 卸料 → 回正，不用分步）"
         )
 
         if self.cmd_thread and self.cmd_thread.is_alive():
