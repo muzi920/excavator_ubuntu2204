@@ -28,7 +28,50 @@
 
 ---
 
-## 2. 角度控制 (Joint Pose Control)
+## 2. 运行状态 topic
+
+主控制节点会对外发布当前执行状态，方便你在上位机、调度脚本或
+测试终端中判断设备是否空闲。只要节点接受到任意动作类指令并开始
+执行，状态就会切换到 `working`；动作结束后会恢复为 `idle`。
+
+- **发布话题**: `/excavator/state`
+- **消息类型**: `std_msgs/msg/String`
+- **状态说明**:
+  - `idle`: 空闲状态，可以接收新的动作指令。
+  - `working`: 正在执行动作，新的动作类 topic 会被拒绝。
+
+动作类 topic 包括：
+- `/excavator/target_pose`
+- `/excavator/target_point`
+- `/excavator/cmd_dig_point`
+- `/excavator/cmd_transit_yaw`
+- `/excavator/cmd_dump_point`
+- `/excavator/cmd_full_cycle`
+- `/excavator/cmd_dig_transit`
+- `/perception/soil_highest_points`
+
+### 📝 测试指令示例
+
+**示例 1：监听当前状态**
+```bash
+ros2 topic echo /excavator/state
+```
+
+**示例 2：先发动作，再观察状态切换**
+```bash
+ros2 topic pub --once /excavator/cmd_dig_point geometry_msgs/msg/PointStamped "{header: {frame_id: 'base_link'}, point: {x: 1.2, y: 0.0, z: 0.0}}"
+```
+
+预期现象：
+1. 节点空闲时，`/excavator/state` 发布 `idle`。
+2. 接受动作指令后，`/excavator/state` 立即切换为 `working`。
+3. 若此时再次发送新的动作类指令，主节点会拒绝执行，并在日志中打印
+   当前忙碌状态提示。
+4. 当前动作结束后，`/excavator/state` 恢复为 `idle`。
+
+---
+
+## 3. 角度控制 (Joint Pose Control)
 
 直接给定挖掘机四个关节的目标角度。节点接收到后，会按照 `回转 -> 大臂 -> 小臂 -> 铲斗` 的安全顺序，逐个单关节移动到目标位置。
 
@@ -53,7 +96,7 @@ ros2 topic pub --once /excavator/target_pose sensor_msgs/msg/JointState "{name: 
 
 ---
 
-## 3. 空间点控制 (Spatial Point Control) - 移动至指定点
+## 4. 空间点控制 (Spatial Point Control) - 移动至指定点
 
 给定挖掘机铲尖在 `base_link` (车体中心) 坐标系下的目标 `(x, y, z)` 空间坐标。
 此命令仅计算一个可行姿态并控制铲尖**移动到该点**，**不**包含挖掘动作序列。
@@ -76,7 +119,7 @@ ros2 topic pub --once /excavator/target_point geometry_msgs/msg/PointStamped "{h
 
 ---
 
-## 4. 自动挖掘动作序列 (Automatic Digging Sequence) - 阶段 1
+## 5. 自动挖掘动作序列 (Automatic Digging Sequence) - 阶段 1
 
 给定一个挖掘目标点 `(x, y, z)`，系统将自动规划并执行完整的**单点挖掘动作序列**（阶段1）。
 内部流程：
@@ -105,7 +148,107 @@ ros2 topic pub --once /excavator/cmd_dig_point geometry_msgs/msg/PointStamped "{
 
 ---
 
-## 5. 运输与回转序列 (Transit Sequence) - 阶段 2
+## 6. 感知挖掘点输入（Soil Highest Points）
+
+这是主控制节点对感知模块暴露的自动挖掘入口。当感知/识别算法选出一个最终
+挖掘点后，直接把该点发布到 `/perception/soil_highest_points`；主控拿到后
+会按与 `/excavator/cmd_dig_point` 完全一致的流程走阶段一挖掘，包含：
+忙闲状态互斥、可达域预检、`plan_and_execute_dig(...)` 七步挖掘剧本。
+
+- **订阅话题**: `/perception/soil_highest_points`
+- **兼容消息类型**：主控制节点对同 topic 同时订阅以下 3 种常见上游格式，
+  以避免“感知侧发了但主控没回调”的静默失配问题。你任选其一即可。
+
+  1. `geometry_msgs/msg/PointStamped`（推荐，带 frame_id）
+     - `header.frame_id`: 感知源坐标系名。当前实现直接把
+       `point.x/y/z` 当作 `base_link` 系使用；如需 TF 转换请在感知侧先转。
+     - `point.x`: 挖掘点正前方距离（米）。
+     - `point.y`: 挖掘点左右距离（米，左正右负）。
+     - `point.z`: 挖掘点高度（米）。
+
+  2. `geometry_msgs/msg/Point`（裸点，不带 header）
+     - `x`, `y`, `z`: 与上面 `PointStamped.point.*` 语义完全一致。
+
+  3. `std_msgs/msg/Float64MultiArray`（感知端最通用的数组格式）
+     - `data` 长度必须 ≥ 3。前 3 个元素依次视为 `x, y, z`（米），多余元素忽略。
+
+> 设计约定：该 topic 代表“感知最终选定的一个挖掘点”，而不是点云簇。
+> 如果你的感知输出是 `sensor_msgs/msg/PointCloud2`（料堆最高点集合），
+> 推荐在感知节点先选单点（取质心 / Z 最大 / 按距离选）后再以
+> `PointStamped` / `Point` / `Float64MultiArray` 三种之一发布到本 topic。
+
+### 🛠️ 常见排障：topic 存在但主控没有反应
+
+如果 `ros2 topic list | grep soil_highest_points` 能看到 topic，但主控
+`main.py` 没有任何 `[SoilHighest]` 开头的日志，**按顺序检查**：
+
+1. **必须用 ROS Humble 对应的系统 Python 启动主控**：
+   - 正确：`/usr/bin/python3` → `3.10.x`
+   - 错误：`~/miniconda3/bin/python3` → `3.14.x`（conda 环境会导致
+     rclpy / geometry_msgs / cv_bridge 在运行时出现反序列化、回调不触发、
+     numpy ABI 不兼容等各种“看起来没反应”的问题）。
+   - 启动前务必确保：
+     ```bash
+     export ROS_DOMAIN_ID=0
+     source /opt/ros/humble/setup.bash
+     which python3    # 应输出 /usr/bin/python3
+     python3 --version   # 应输出 Python 3.10.x
+     ```
+
+2. **消息类型必须匹配**：在你真机上执行
+   ```bash
+   export ROS_DOMAIN_ID=0
+   source /opt/ros/humble/setup.bash
+   ros2 topic info -v /perception/soil_highest_points
+   ```
+   查看 `Publisher` 真正发布的类型。主控节点启动时也会把自己所有已注册
+   subscription 的 topic + 消息类型打印到日志（`=== 已注册订阅清单 ===`）。
+   两边类型不一致就会静默不回调。如果你确认上游是第 4 种 msg（例如
+   `PointCloud2` 或自定义 msg），告诉我真实类型，我补对应的解码回调。
+
+3. **`/excavator/state == working` 时本来就会拒绝新感知点**：
+   - 感知端“持续发布”的情况下，第一帧点被接受后主控切 `working`。
+   - 之后的若干帧在动作结束前都会被 busy 机制跳过，并打印节流警告：
+     `[SoilHighest][...] 忙碌（state='working'），已跳过本次感知挖掘点 ...`
+   - 这是期望行为。不是“没反应”。如果你希望改成“每次新来点就打断重跑”
+     或“来新排队取最后一帧”，告诉我策略，我再加一个可切换的抢占模式。
+
+### 📝 测试指令示例
+
+**示例 1：PointStamped（推荐）**
+```bash
+export ROS_DOMAIN_ID=0
+source /opt/ros/humble/setup.bash
+ros2 topic pub --once /perception/soil_highest_points geometry_msgs/msg/PointStamped \
+  "{header: {frame_id: 'soil_perception'}, point: {x: 1.28, y: 0.0, z: 0.0}}"
+```
+
+**示例 2：裸 Point**
+```bash
+export ROS_DOMAIN_ID=0
+source /opt/ros/humble/setup.bash
+ros2 topic pub --once /perception/soil_highest_points geometry_msgs/msg/Point \
+  "{x: 1.28, y: 0.0, z: 0.0}"
+```
+
+**示例 3：Float64MultiArray([x,y,z])**
+```bash
+export ROS_DOMAIN_ID=0
+source /opt/ros/humble/setup.bash
+ros2 topic pub --once /perception/soil_highest_points std_msgs/msg/Float64MultiArray \
+  "{data: [1.28, 0.0, 0.0]}"
+```
+
+预期行为（3 个示例一致）：
+1. 主控日志打印 `[SoilHighest][PointStamped|Point|Float64MultiArray] 收到感知挖掘点 ...`
+2. 若当前状态为 `idle`，`/excavator/state` 切换为 `working` 并开始挖掘。
+3. 阶段一挖掘完成后，`/excavator/state` 自动恢复为 `idle`。
+4. 若在挖掘中再次发布该 topic，会看到显式的 busy 跳过日志（约 2 秒一条），
+   不启动新挖掘，也不会把上一动作打断。
+
+---
+
+## 7. 运输与回转序列 (Transit Sequence) - 阶段 2
 
 此指令用于挖掘完成后的物料转移阶段。
 系统将自动执行：
@@ -135,7 +278,7 @@ ros2 topic pub --once /excavator/cmd_transit_yaw geometry_msgs/msg/PointStamped 
 
 ---
 
-## 6. 卸料点控制 (Dump Sequence) - 阶段 3
+## 8. 卸料点控制 (Dump Sequence) - 阶段 3
 
 此指令用于到达卸料区域后，将铲尖对准卸料点并打开铲斗倒料。
 
@@ -173,9 +316,12 @@ ros2 topic pub --once /excavator/cmd_dump_point geometry_msgs/msg/PointStamped "
 
 ---
 
-## 7. 高级全流程组合（高级 API）
+## 8. 高级全流程组合（高级 API）
 
-前面的 §2/3/4/5/6 都是「单阶段话题」，每次只触发一个阶段。当你已经调好了单阶段的参数，想让整机自动运行一个完整循环时，直接用下面两个「组合话题」即可——**一次发布 = 自动串起多个阶段**，中间失败会立即中止。
+前面的 §3/4/5/6/7 都是「单阶段话题」，每次只触发一个阶段。当你
+已经调好了单阶段的参数，想让整机自动运行一个完整循环时，直接用
+下面两个「组合话题」即可。**一次发布 = 自动串起多个阶段**，中间
+失败会立即中止。
 
 ---
 
@@ -263,7 +409,7 @@ ros2 topic pub --once /excavator/cmd_dig_transit std_msgs/msg/Float64MultiArray 
 
 ---
 
-## 8. 附录：60FED 实体模型运动包络范围 & 关节限位（最新版）
+## 9. 附录：60FED 实体模型运动包络范围 & 关节限位（最新版）
 
 ### 关节限位（★ 用户现场标定，覆盖 v10 默认值）
 | 关节名 (semantic) | 最小值 | 最大值 | 方向语义说明 |
@@ -286,10 +432,13 @@ ros2 topic pub --once /excavator/cmd_dig_transit std_msgs/msg/Float64MultiArray 
 
 ---
 
-## 8. 运行机制与注意事项
+## 12. 运行机制与注意事项
 
 1. **防并发保护**: 
-   如果你在某个指令还未执行完毕时发送了新指令，`main.py` 终端会打印警告：`A command is already executing. Ignoring new point command.`。这是为了防止动作冲突导致机械臂失控。
+   如果你在某个指令还未执行完毕时发送了新指令，节点会保持
+   `/excavator/state = working`，并拒绝新的动作类 topic。终端日志会
+   打印类似 `当前状态为 working，拒绝新指令` 的提示。这是为了防止动作
+   冲突导致机械臂失控。
 2. **串行单关节**: 
    在执行任何控制时，你会看到机器先旋转、停顿，然后动大臂、停顿，再动小臂... 绝对不会有两个关节同时运动。
 3. **容差过滤**: 

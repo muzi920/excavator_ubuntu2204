@@ -14,9 +14,8 @@ import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import PointStamped
 from sensor_msgs.msg import JointState
-from std_msgs.msg import Float64MultiArray, MultiArrayDimension
+from std_msgs.msg import Float64MultiArray, String
 import threading
-import time
 
 from v11_control.v11_sensor_bridge import V11SensorBridge
 from control_lib.angle_control import JointAngleController
@@ -103,32 +102,78 @@ class V15MainNode(Node):
             Float64MultiArray, '/excavator/cmd_full_cycle',  self.cmd_full_cycle_cb,  10)
         self.sub_cmd_dig_transit = self.create_subscription(
             Float64MultiArray, '/excavator/cmd_dig_transit', self.cmd_dig_transit_cb, 10)
-        
+
+        # 4.2 运行状态发布：idle=空闲可接收新指令；working=忙碌执行中
+        self.pub_state = self.create_publisher(String, '/excavator/state', 10)
+        self._state_lock = threading.Lock()
+        self._state = "idle"
         self.cmd_thread = None
+        self._publish_state()
         self.get_logger().info("V15 Main Node Initialized. Waiting for high-level commands...")
+
+    def _publish_state(self):
+        msg = String()
+        msg.data = self._state
+        self.pub_state.publish(msg)
+
+    def _set_state(self, state: str):
+        with self._state_lock:
+            changed = self._state != state
+            self._state = state
+        self._publish_state()
+        if changed:
+            self.get_logger().info(f"[State] state -> {state}")
+
+    def _start_command_thread(self, command_name: str, target):
+        with self._state_lock:
+            is_busy = self._state == "working" or (self.cmd_thread is not None and self.cmd_thread.is_alive())
+            if is_busy:
+                current_state = self._state
+            else:
+                self._state = "working"
+                current_state = self._state
+
+        if is_busy:
+            self._publish_state()
+            self.get_logger().warning(
+                f"[State] 当前状态为 {current_state}，拒绝新指令 `{command_name}`。请等待当前动作完成后重试。"
+            )
+            return False
+
+        self._publish_state()
+        self.get_logger().info(f"[State] 接受指令 `{command_name}`，state -> working")
+
+        def _wrapped():
+            try:
+                target()
+            except Exception as e:
+                self.get_logger().error(f"[State] 指令 `{command_name}` 执行异常: {type(e).__name__}: {e}")
+            finally:
+                with self._state_lock:
+                    self.cmd_thread = None
+                self._set_state("idle")
+                self.get_logger().info(f"[State] 指令 `{command_name}` 执行结束，state -> idle")
+
+        thread = threading.Thread(target=_wrapped, daemon=True)
+        with self._state_lock:
+            self.cmd_thread = thread
+        thread.start()
+        return True
 
     def cmd_dig_cb(self, msg: PointStamped):
         xyz = (msg.point.x, msg.point.y, msg.point.z)
         self.get_logger().info(f"Received dig command point: {xyz}")
-        
-        if self.cmd_thread and self.cmd_thread.is_alive():
-            self.get_logger().warning("A command is already executing. Ignoring new dig command.")
-            return
-            
+
         def _exec():
-            # 预检可达性
             report = self.point_mover.ws.check_point_reachable(xyz, mode="dig")
             if not report.success:
                 self.get_logger().error(f"目标点 {xyz} 不在可达工作空间内，拒绝执行挖掘！原因: {report.reasons}")
                 return
-            else:
-                xyz_use = xyz
-                
+            xyz_use = xyz
             success = self.dig_ctrl.plan_and_execute_dig(xyz_use)
             self.get_logger().info(f"Dig Phase 1 Result: success={success}")
-            
-        self.cmd_thread = threading.Thread(target=_exec, daemon=True)
-        self.cmd_thread.start()
+
+        self._start_command_thread("cmd_dig_point", _exec)
 
     def cmd_transit_cb(self, msg: PointStamped):
         """
@@ -145,17 +190,12 @@ class V15MainNode(Node):
             f"            即将执行顺序：1) boom_swing 抬大臂到 -25°   2) swing_yaw 回转到 {yaw_deg}°"
         )
         
-        if self.cmd_thread and self.cmd_thread.is_alive():
-            self.get_logger().warning("已有指令正在执行中，拒绝新指令。请等待上一条完成。")
-            return
-            
         def _exec():
             self.get_logger().info(f"[TransitCb] ====== 启动阶段2 线程：目标 swing_yaw = {yaw_deg}° ======")
             success = self.dig_ctrl.plan_and_execute_transit(yaw_deg)
             self.get_logger().info(f"[TransitCb] ====== 阶段2 完成：success={success} ======")
-            
-        self.cmd_thread = threading.Thread(target=_exec, daemon=True)
-        self.cmd_thread.start()
+
+        self._start_command_thread("cmd_transit_yaw", _exec)
 
     def cmd_dump_cb(self, msg: PointStamped):
         """
@@ -175,17 +215,12 @@ class V15MainNode(Node):
             f"            即将执行：1) boom→0°  2) swing→atan2(y,x)  3) arm+bucket 到点  4) bucket 开斗卸料"
         )
 
-        if self.cmd_thread and self.cmd_thread.is_alive():
-            self.get_logger().warning("[DumpCb] 已有指令在执行，拒绝新卸料指令。请等待上一条完成。")
-            return
-
         def _exec():
             self.get_logger().info("[DumpCb] ====== 启动阶段 3 卸料线程 ======")
             ok, pose = self.dig_ctrl.plan_and_execute_dump(dump_xyz)
             self.get_logger().info(f"[DumpCb] ====== 阶段 3 卸料完成：success={ok}  pose={pose} ======")
 
-        self.cmd_thread = threading.Thread(target=_exec, daemon=True)
-        self.cmd_thread.start()
+        self._start_command_thread("cmd_dump_point", _exec)
 
     # ========================================================================
     # 高级组合：全流程 A — dig(3) + dump(3)  = size=6
@@ -234,17 +269,12 @@ class V15MainNode(Node):
             f"(规则: z<0.5→0.5, z>=0.5→原值)"
         )
 
-        if self.cmd_thread and self.cmd_thread.is_alive():
-            self.get_logger().warning("[FullCycle A] 已有指令在执行，拒绝新全流程指令。请等待完成。")
-            return
-
         def _exec():
             self.get_logger().info("[FullCycle A] ====== 启动全流程 A 线程 ======")
             success = self.dig_ctrl.execute_full_cycle_dig_dump(dig_xyz, dump_xyz)
             self.get_logger().info(f"[FullCycle A] ====== 全流程 A 完成：success={success} ======")
 
-        self.cmd_thread = threading.Thread(target=_exec, daemon=True)
-        self.cmd_thread.start()
+        self._start_command_thread("cmd_full_cycle", _exec)
 
     # ========================================================================
     # 高级组合：全流程 B — dig(3) + transit(1) = size=4
@@ -288,26 +318,17 @@ class V15MainNode(Node):
             f"            （后续会: 回转到 {transit_yaw_deg:.1f}° → 该方向正前 1.2m × 高 ≥0.5m 自动推卸料点 → 卸料 → 回正，不用分步）"
         )
 
-        if self.cmd_thread and self.cmd_thread.is_alive():
-            self.get_logger().warning("[FullCycle B] 已有指令在执行，拒绝新指令。请等待完成。")
-            return
-
         def _exec():
             self.get_logger().info("[FullCycle B] ====== 启动完整闭环 B 线程 ======")
             success = self.dig_ctrl.execute_dig_and_transit(dig_xyz, transit_yaw_deg)
             self.get_logger().info(f"[FullCycle B] ====== 完整闭环 B 完成：success={success} ======")
 
-        self.cmd_thread = threading.Thread(target=_exec, daemon=True)
-        self.cmd_thread.start()
+        self._start_command_thread("cmd_dig_transit", _exec)
 
     def target_point_cb(self, msg: PointStamped):
         xyz = (msg.point.x, msg.point.y, msg.point.z)
         self.get_logger().info(f"Received target point: {xyz}")
         
-        if self.cmd_thread and self.cmd_thread.is_alive():
-            self.get_logger().warning("A command is already executing. Ignoring new point command.")
-            return
-            
         def _exec():
             # 预检可达性，如果不可达，直接报错拒绝，不再找最近点代替
             report = self.point_mover.ws.check_point_reachable(xyz, mode="dig")
@@ -317,17 +338,12 @@ class V15MainNode(Node):
                 
             res = self.point_mover.move_to_point_serial(xyz, auto_use_closest_if_unreachable=False)
             self.get_logger().info(f"Point Move Result: success={res.success}, reason={res.reason}")
-            
-        self.cmd_thread = threading.Thread(target=_exec, daemon=True)
-        self.cmd_thread.start()
+
+        self._start_command_thread("target_point", _exec)
 
     def target_pose_cb(self, msg: JointState):
         self.get_logger().info("Received target pose (Degrees).")
         
-        if self.cmd_thread and self.cmd_thread.is_alive():
-            self.get_logger().warning("A command is already executing. Ignoring new pose command.")
-            return
-            
         target_pose = {}
         # 将 JointState 消息映射回字典，用户输入现为度 (Degrees)，直接使用即可
         for n, p in zip(msg.name, msg.position):
@@ -338,9 +354,8 @@ class V15MainNode(Node):
         def _exec():
             res = self.angle_ctrl.move_pose_serial(target_pose)
             self.get_logger().info(f"Pose Move Result: success={res.get('success')}, reason={res.get('reason')}")
-            
-        self.cmd_thread = threading.Thread(target=_exec, daemon=True)
-        self.cmd_thread.start()
+
+        self._start_command_thread("target_pose", _exec)
 
 from rclpy.executors import MultiThreadedExecutor
 
