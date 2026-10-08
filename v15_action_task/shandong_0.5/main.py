@@ -4,6 +4,30 @@
 import sys
 import os
 import re
+
+# ------------------------------------------------------------------
+# ROS2 默认会在 `rclpy.init()` 之前决定日志目录，优先看 `$ROS_LOG_DIR`。
+# 真机上常见问题：/home/libo/.ros/log 有时会出现 "Read-only file system"，
+# 导致 main.py 在 rclpy.init() 之前直接 RuntimeError，直接起不来，节点，现象就是：
+#   "一直在启动，但是 state / 没有任何 topic，cmd 数据也不回"
+# 这里在 import rclpy 之前就把日志目录强制指到 /tmp，避开只读挂载的 ~/.ros/log
+# ------------------------------------------------------------------
+_DEFAULT_ROS_LOG_DIR = "/tmp/v15_ros_logs"
+try:
+    os.makedirs(_DEFAULT_ROS_LOG_DIR, exist_ok=True)
+    # 写一下测试文件，真正确保可写；写失败就退回 /tmp
+    _probe = os.path.join(_DEFAULT_ROS_LOG_DIR, ".write_test")
+    with open(_probe, "w") as _f:
+        _f.write("ok")
+    try:
+        os.remove(_probe)
+    except Exception:
+        pass
+except Exception:
+    _DEFAULT_ROS_LOG_DIR = "/tmp"
+os.environ["ROS_LOG_DIR"] = _DEFAULT_ROS_LOG_DIR
+os.environ["ROSCONSOLE_FORMAT"] = os.environ.get("ROSCONSOLE_FORMAT", "[${severity}] [${time}] [${node}]: ${message}")
+
 current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
 grand_parent = os.path.dirname(parent_dir)
@@ -109,12 +133,43 @@ class V15MainNode(Node):
         self._state = "idle"
         self.cmd_thread = None
         self._publish_state()
+        # 周期性 10Hz (0.1s) 重发当前 state，并做一次“工作线程看门狗”同步：
+        #   极少数情况下（线程在 finally 前短暂退出窗口、或控制层挂起导致 finally 未执行），
+        #   可能出现 “动作实际结束 / 线程已死，但 state 仍为 working” 的现象。
+        #   这里用线程存活情况作为第二事实源，对 working 状态做兜底校正，保证订阅端不会卡死。
+        self._state_watchdog_timer = self.create_timer(0.1, self._state_watchdog_tick)
         self.get_logger().info("V15 Main Node Initialized. Waiting for high-level commands...")
 
     def _publish_state(self):
         msg = String()
         msg.data = self._state
         self.pub_state.publish(msg)
+
+    def _state_watchdog_tick(self) -> None:
+        corrected = False
+        thread_alive = False
+        with self._state_lock:
+            t = self.cmd_thread
+            if t is not None:
+                try:
+                    thread_alive = bool(t.is_alive())
+                except Exception:
+                    thread_alive = False
+            # 看门狗规则：
+            #   - 若 state=working 但 cmd_thread 已死/None → 强制回 idle（最常见的不同步来源）
+            #   - 若 state=idle 但 cmd_thread 仍活着 → 修正为 working（保护逻辑一致性）
+            if self._state == "working" and not thread_alive:
+                self._state = "idle"
+                corrected = True
+            elif self._state == "idle" and thread_alive:
+                self._state = "working"
+                corrected = True
+        self._publish_state()
+        if corrected:
+            self.get_logger().warning(
+                f"[StateWatchdog] 检测到状态与线程存活不一致，已自动纠正 state -> {self._state} "
+                f"(cmd_thread_alive={thread_alive})"
+            )
 
     def _set_state(self, state: str):
         with self._state_lock:
@@ -126,10 +181,25 @@ class V15MainNode(Node):
 
     def _start_command_thread(self, command_name: str, target):
         with self._state_lock:
-            is_busy = self._state == "working" or (self.cmd_thread is not None and self.cmd_thread.is_alive())
+            # busy 判定：同时看当前状态字符串 和 cmd_thread 是否仍存活
+            alive = False
+            if self.cmd_thread is not None:
+                try:
+                    alive = bool(self.cmd_thread.is_alive())
+                except Exception:
+                    alive = False
+            is_busy = self._state == "working" or alive
             if is_busy:
                 current_state = self._state
             else:
+                thread = threading.Thread(
+                    target=self._command_thread_wrapped,
+                    args=(command_name, target),
+                    daemon=True,
+                )
+                # 先把线程句柄写进 self.cmd_thread（在同一个锁里），
+                # 避免线程提前结束、finally 把 cmd_thread 置空，然后这里再覆盖导致的竞态。
+                self.cmd_thread = thread
                 self._state = "working"
                 current_state = self._state
 
@@ -143,22 +213,37 @@ class V15MainNode(Node):
         self._publish_state()
         self.get_logger().info(f"[State] 接受指令 `{command_name}`，state -> working")
 
-        def _wrapped():
-            try:
-                target()
-            except Exception as e:
-                self.get_logger().error(f"[State] 指令 `{command_name}` 执行异常: {type(e).__name__}: {e}")
-            finally:
-                with self._state_lock:
-                    self.cmd_thread = None
-                self._set_state("idle")
-                self.get_logger().info(f"[State] 指令 `{command_name}` 执行结束，state -> idle")
-
-        thread = threading.Thread(target=_wrapped, daemon=True)
+        # 在锁外真正启动线程（减少持锁时长）
         with self._state_lock:
-            self.cmd_thread = thread
-        thread.start()
+            t = self.cmd_thread
+        if t is None:
+            # 极端竞态：刚写完就被别的路径置空了
+            self._set_state("idle")
+            self.get_logger().error(
+                f"[State] 指令 `{command_name}` 线程句柄在启动前丢失，已回 idle，未执行。"
+            )
+            return False
+        t.start()
         return True
+
+    def _command_thread_wrapped(self, command_name: str, target) -> None:
+        """统一的指令线程包装：保证无论 target 抛异常还是正常 return，最终都会把 state 置回 idle。"""
+        try:
+            target()
+        except Exception as e:
+            self.get_logger().error(
+                f"[State] 指令 `{command_name}` 执行异常: {type(e).__name__}: {e}"
+            )
+        finally:
+            # 在同一个锁里把“线程句柄清掉 + 状态置 idle”一起完成，
+            # 避免 10Hz 看门狗和其它回调读到半一致的状态。
+            with self._state_lock:
+                self.cmd_thread = None
+                self._state = "idle"
+            self._publish_state()
+            self.get_logger().info(
+                f"[State] 指令 `{command_name}` 执行结束，state -> idle"
+            )
 
     def cmd_dig_cb(self, msg: PointStamped):
         xyz = (msg.point.x, msg.point.y, msg.point.z)

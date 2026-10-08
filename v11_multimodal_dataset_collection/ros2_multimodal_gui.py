@@ -270,16 +270,23 @@ class Ros2DataPublisher(Node):
         msg_odom.point_step = 16
         msg_odom.row_step = msg_odom.point_step * msg_odom.width
         msg_odom.is_dense = True
-        
-        # 获取当前的 base_link -> odom 的四元数 (正向)
+
+        # 关键点：TiltCompensator 返回的 quat（以及 publish_odom_tf 里发布的 TF）
+        # 语义定义为 "odom -> base_link 的旋转"（把 odom 系下的向量旋转到 base_link 系）。
+        # 但我们这里要把一个点从 base_link 系变换到 odom 系，需要的是反向变换：
+        #     P_odom = R_{base <- odom}.T @ P_base = R_{base_to_odom} @ P_base
+        # 也就是必须对旋转矩阵取转置（等价于取逆，因为 R 是正交矩阵）。
+        # 如果不做 .T，就会造成“车体左/右转，周围景物也在 odom 系里反向转”，
+        # 视觉上就是你现在看到的：环境不静止，世界跟着挖掘机一起动。
         quat = np.array([0.0, 0.0, 0.0, 1.0])
         if hasattr(self, 'tilt_compensator'):
             quat = self.tilt_compensator.get_quaternion(getattr(self, 'last_yaw_rad', 0.0))
-        
+
         # --- 高效旋转矩阵计算 ---
-        r_matrix = R.from_quat(quat).as_matrix()
-        # pts_odom = R * P + T (T 是 0)
-        pts_odom = (r_matrix @ pts_base_link.T).T
+        r_odom_to_base = R.from_quat(quat).as_matrix()
+        r_base_to_odom = r_odom_to_base.T
+        # pts_odom = R_{base -> odom} * P_base + T (平移 T=0，因为履带不移动)
+        pts_odom = (r_base_to_odom @ pts_base_link.T).T
         
         pc_data_odom = np.empty(len(pts_odom), dtype=dt)
         pc_data_odom['x'] = pts_odom[:, 0]
@@ -587,6 +594,10 @@ class V11MultimodalGUI:
         # 实例化 IMU 倾斜补偿与预积分器
         self.tilt_compensator = TiltCompensator(alpha=0.98)
 
+        # 修复: 将姿态相关属性传递给 ros_node，使 publish_pointcloud 能正确做 odom 系旋转补偿
+        self.ros_node.tilt_compensator = self.tilt_compensator
+        self.ros_node.last_yaw_rad = 0.0
+
         # 启动雷达 IMU 监听线程
         self.imu_running = True
         self.imu_thread = threading.Thread(target=self._imu_listener_loop, daemon=True)
@@ -747,11 +758,16 @@ class V11MultimodalGUI:
                         self.sensor_data["回转"]["yaw"] = swing_deg
                         self.sensor_data["回转"]["yaw_rate"] = w_yaw
                         self.sensor_data["回转"]["ts"] = time.time()
-                        
-                        # 修复: 当左旋转(逆时针)时，如果环境反而向右旋转(反转了180度)，
-                        # 说明计算矩阵时传入的 yaw 符号反了，导致过补偿/反向补偿。
-                        # 这里去掉负号，翻转用于生成 R_odom_base 的偏航角方向。
+
+                        # 关键点：把物理回转角 swing_deg 对齐到 scipy `from_euler('xyz', yaw)`
+                        #   的正方向约定。scipy 的 yaw 是“绕 Z 轴从 +X 往 +Y 方向为正”。
+                        #   如果修复后你发现 RViz 里：车体左转，环境反而右转（或反之），
+                        #   说明 swing_deg 和这个约定的符号相反，把下面的 + 改成 -（或反过来）
+                        #   即可一次调到位。当前按“swing_deg 正值 = 逆时针 / 左转”对齐，
+                        #   与 scipy yaw 正方向一致，所以直接用 math.radians(+swing_deg)。
                         self.last_yaw_rad = math.radians(swing_deg)
+                        # 修复: 同步更新 ros_node 上的 last_yaw_rad，供点云发布时使用
+                        self.ros_node.last_yaw_rad = self.last_yaw_rad
                         
                     # --- 2. 更新 TiltCompensator 并发布 Odom TF ---
                     # 转换雷达坐标系下的 IMU 数据到 base_link
@@ -820,9 +836,12 @@ class V11MultimodalGUI:
                         if time.time() - self.last_pc_save_time >= 0.1:
                             if self.pc_buffer:
                                 pts_arr = np.array(self.pc_buffer, dtype=np.float32)
-                                self.ros_node.publish_pointcloud(pts_arr)
-                                # 发布完成后清空，准备累积下一帧
-                                self.pc_buffer = []
+                                try:
+                                    self.ros_node.publish_pointcloud(pts_arr)
+                                finally:
+                                    # 修复: 无论 publish 是否成功，都清空 buffer，
+                                    # 防止异常后点云无限累积，导致数据越来越多、延迟越来越大
+                                    self.pc_buffer = []
                             self.last_pc_save_time = time.time()
                 except Exception as e:
                     print(f"[雷达数据监听] 解析点云异常: {e}")

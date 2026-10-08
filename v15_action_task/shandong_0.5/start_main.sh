@@ -22,6 +22,16 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WS_DIR="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
 
 export ROS_DOMAIN_ID=0
+
+# 真机上 ~/.ros/log 偶尔会是 Read-only file system，导致 main.py 在 rclpy.init() 就崩。
+# 这里优先把 ROS_LOG_DIR 指到 /tmp/v15_ros_logs，和 main.py 顶部的保护逻辑一致。
+mkdir -p /tmp/v15_ros_logs 2>/dev/null || true
+if [ -w /tmp/v15_ros_logs ]; then
+  export ROS_LOG_DIR=/tmp/v15_ros_logs
+else
+  export ROS_LOG_DIR=/tmp
+fi
+
 if [ -f /opt/ros/humble/setup.bash ]; then
   # shellcheck disable=SC1091
   source /opt/ros/humble/setup.bash

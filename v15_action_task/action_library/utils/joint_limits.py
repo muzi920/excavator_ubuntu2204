@@ -33,7 +33,7 @@ class JointLimit:
 
 JOINT_LIMITS: Dict[str, JointLimit] = {
     "swing_yaw":  JointLimit(-180.0, 180.0),
-    "boom_swing": JointLimit(-5.0, 55.0),
+    "boom_swing": JointLimit(0.0, 55.0),
     "arm_boom":   JointLimit(0.0, 130.0),
     "bucket_arm": JointLimit(-95.0, 45.0),
 }

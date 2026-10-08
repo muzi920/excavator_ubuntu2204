@@ -1,0 +1,3 @@
+[console_scripts]
+pcdet = pcdet_ros2.pcdet_node:main
+

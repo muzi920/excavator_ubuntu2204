@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="params_file"
+         default="$(find-pkg-share pcdet_ros2)/config/pcdet_second_soil_box.param.yaml"/>
+    <arg name="input_topic" default="/pointcloud"/>
+    <arg name="output_topic" default="/perception/detections_3d"/>
+    <arg name="highest_points_topic"
+         default="/perception/soil_highest_points"/>
+    <arg name="highest_point_markers_topic"
+         default="/perception/soil_highest_point_markers"/>
+    <arg name="box_highest_points_topic"
+         default="/perception/box_highest_points"/>
+    <arg name="box_highest_point_markers_topic"
+         default="/perception/box_highest_point_markers"/>
+    <!-- <arg name="cmd_dig_point_topic" default="/excavator/cmd_dig_point"/> -->
+    <arg name="cmd_full_cycle_topic"
+         default="/excavator/cmd_full_cycle"/>
+
+    <include file="$(find-pkg-share pcdet_ros2)/launch/pcdet.launch.py">
+        <arg name="params_file" value="$(var params_file)"/>
+        <arg name="input_topic" value="$(var input_topic)"/>
+        <arg name="output_topic" value="$(var output_topic)"/>
+        <arg name="highest_points_topic" value="$(var highest_points_topic)"/>
+        <arg name="highest_point_markers_topic"
+             value="$(var highest_point_markers_topic)"/>
+        <arg name="box_highest_points_topic"
+             value="$(var box_highest_points_topic)"/>
+        <arg name="box_highest_point_markers_topic"
+             value="$(var box_highest_point_markers_topic)"/>
+        <!-- <arg name="cmd_dig_point_topic" value="$(var cmd_dig_point_topic)"/> -->
+        <arg name="cmd_full_cycle_topic" value="$(var cmd_full_cycle_topic)"/>
+    </include>
+</launch>

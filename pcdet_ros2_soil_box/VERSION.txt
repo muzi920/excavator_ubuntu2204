@@ -1,0 +1,5 @@
+Bundle: no_conda_migration_soil_box_20260920
+Environment: Ubuntu 24.04, ROS 2 Jazzy, Python 3.12 venv
+Model: SECONDNet, classes Soil + Box, checkpoint epoch 80
+OpenPCDet base commit: 8cfc2a6f23eed0b10aabcdc4768c60b184357061
+Weight SHA-256: 0117e11a3bceb356e9663e7fe868eb86765892240a6b98974dc708bb86d1684c
