@@ -48,7 +48,7 @@ class DigPhase1Controller:
                 self.limits[joint] = (limit.min_deg, limit.max_deg)
         else:
             # Fallback based on default_config.yaml if attribute structure differs
-            # ★ 用户标定：大臂 0°=最高点（完全抬起），48°=最低点（压到地面）
+            # ★ 用户标定：大臂 0°=最高点（完全抬起），55°=最低点（压到地面）
             self.limits = {
                 "swing_yaw": (-180.0, 180.0),
                 "boom_swing": (0.0, 55.0),
@@ -59,28 +59,28 @@ class DigPhase1Controller:
     # ------------------------------------------------------------------
     # 基础辅助：小臂 / 铲斗 百分比换算（0%=完全打开，100%=完全关闭）
     # 限位参考：
-    #   bucket_arm range: [-95, +20]
-    #     开斗 0% = bucket = -95°（完全打开卸料）
-    #     收斗 75% ≈ bucket = -20° （挖深时半收斗）
-    #     收斗 100% = bucket = +20° （抱紧满斗）
-    #   arm_boom range: [0, +130]（用户物理标定，严禁修改）
+    #   bucket_arm range: [-90, +15]
+    #     开斗 0% = bucket = -90°（完全打开卸料）
+    #     收斗 75% ≈ bucket = -10° （挖深时半收斗）
+    #     收斗 100% = bucket = +15° （抱紧满斗）
+    #   arm_boom range: [0, +90]（用户物理标定，严禁修改）
     #     外推 0% = arm = 0°（完全外推伸直）
-    #     外推 45% ≈ arm = 0 + 45% * 130 ≈ 58.5°（中间半收姿态）
-    #     外推 100% = arm = +130°（完全收回抱紧）
+    #     外推 45% ≈ arm = 0 + 45% * 90 ≈ 58.5°（中间半收姿态）
+    #     外推 100% = arm = +90°（完全收回抱紧）
     # ------------------------------------------------------------------
     def _bucket_pct(self, pct: float) -> float:
-        mn, mx = self.limits.get("bucket_arm", (-95.0, 20.0))
+        mn, mx = self.limits.get("bucket_arm", (-90.0, 15.0))
         pct = max(0.0, min(100.0, float(pct)))
         return mn + (mx - mn) * (pct / 100.0)
 
     def _arm_pct(self, pct: float) -> float:
-        mn, mx = self.limits.get("arm_boom", (0.0, 130.0))
+        mn, mx = self.limits.get("arm_boom", (0.0, 90.0))
         pct = max(0.0, min(100.0, float(pct)))
         return mn + (mx - mn) * (pct / 100.0)
 
     # ------------------------------------------------------------------
     # 基础工具：按 self.limits 钳制单关节角度
-    #   用法: self._clamp("arm_boom", 999.0) → 130.0
+    #   用法: self._clamp("arm_boom", 999.0) → 90.0
     # ------------------------------------------------------------------
     def _clamp(self, joint: str, value_deg: float) -> float:
         lim = self.limits.get(str(joint))
@@ -99,7 +99,7 @@ class DigPhase1Controller:
     # ------------------------------------------------------------------
     # 新增基础功能：小臂垂直地面控制（物理闭环，基于 V4 倾角传感器）
     # 关键约束（用户明确要求）：
-    #   · 控制限位不要改，严格用 arm_boom ∈ [0°, 130°] 用户物理标定
+    #   · 控制限位不要改，严格用 arm_boom ∈ [0°, 90°] 用户物理标定
     #   · 「垂直」是物理意义上的对地垂直（小臂杆 abs pitch ≈ 90° 向下），
     #     不是硬编码控制端 arm_boom = 90°
     #

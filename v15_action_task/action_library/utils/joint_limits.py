@@ -3,9 +3,9 @@
 
 按照 v4/v10/v14 工程语义对齐：
   - swing_yaw   : 回转角，±180°
-  - boom_swing  : 大臂相对上车，-5°（抬起）~ +55°（下探）
-  - arm_boom    : 小臂相对大臂，0°（伸出）~ +130°（收回）
-  - bucket_arm  : 铲斗相对小臂，-95°（开斗卸料）~ +45°（收斗闭合）
+  - boom_swing  : 大臂相对上车，0°（抬起）~ +55°（下探）
+  - arm_boom    : 小臂相对大臂，0°（伸出）~ +90°（收回）
+  - bucket_arm  : 铲斗相对小臂，-90°（开斗卸料）~ +15°（收斗闭合）
 """
 
 from __future__ import annotations
@@ -34,8 +34,8 @@ class JointLimit:
 JOINT_LIMITS: Dict[str, JointLimit] = {
     "swing_yaw":  JointLimit(-180.0, 180.0),
     "boom_swing": JointLimit(0.0, 55.0),
-    "arm_boom":   JointLimit(0.0, 130.0),
-    "bucket_arm": JointLimit(-95.0, 45.0),
+    "arm_boom":   JointLimit(0.0, 90.0),
+    "bucket_arm": JointLimit(-90.0, 15.0),
 }
 
 VALID_JOINT_NAMES = set(JOINT_LIMITS.keys())
